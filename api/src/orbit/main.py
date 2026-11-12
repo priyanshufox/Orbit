@@ -13,15 +13,20 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from orbit.core import health
+from orbit.core.auth import TokenVerifier
 from orbit.core.config import Settings, get_settings
 from orbit.core.db import create_engine, create_sessionmaker
 from orbit.core.logging import configure_logging
+from orbit.core.openapi import install_openapi
 from orbit.core.redis import create_redis
+from orbit.modules.accounts.router import router as accounts_router
 
 log = structlog.get_logger("orbit.api")
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, *, token_verifier: TokenVerifier | None = None
+) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, json=settings.is_production)
 
@@ -48,6 +53,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         redoc_url=None,
     )
     app.dependency_overrides[get_settings] = lambda: settings
+    app.state.token_verifier = token_verifier or TokenVerifier.from_jwks_url(
+        settings.auth_jwks_url, issuer=settings.auth_issuer, audience=settings.token_audience
+    )
 
     app.add_middleware(
         CORSMiddleware,
@@ -81,6 +89,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return response
 
     app.include_router(health.router)
+    app.include_router(accounts_router)
+    install_openapi(app)
     return app
 
 

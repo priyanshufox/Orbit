@@ -16,7 +16,7 @@ from orbit.modules.game.models import Answer, Question, Reaction, Social
 from orbit.modules.privacy.models import GraphSnapshot
 from orbit.modules.rooms.models import Room, RoomMember
 from orbit.modules.scoring.models import Score
-from tests.conftest import alembic_config
+from tests.conftest import alembic_config, make_identity
 
 ROOM_TABLES = [RoomMember, Answer, Reaction, Social, Score]
 
@@ -27,9 +27,9 @@ async def count(db: AsyncSession, model: type, **where: object) -> int:
 
 
 async def make_user(db: AsyncSession, name: str) -> User:
-    user = User(
-        email=f"{name}-{uuid4().hex[:8]}@orbit.test", name=name, birth_year=2000, is_adult=True
-    )
+    email = f"{name}-{uuid4().hex[:8]}@orbit.test"
+    user_id = await make_identity(db, email, name)
+    user = User(id=user_id, email=email, name=name, birth_year=2000, is_adult=True)
     db.add(user)
     await db.flush()
     return user
@@ -119,6 +119,13 @@ async def test_deleting_user_removes_roots_and_snapshots(db: AsyncSession) -> No
     assert await count(db, Room, code=room.code) == 0
 
 
+async def test_deleting_sign_in_identity_removes_profile(db: AsyncSession) -> None:
+    _, a, _ = await make_played_room(db)
+    await db.execute(text('delete from auth."user" where id = :u'), {"u": a.id})
+    assert await count(db, User, id=a.id) == 0
+    assert await count(db, GraphSnapshot, user_id=a.id) == 0
+
+
 async def _rejects(db: AsyncSession, *rows: object) -> None:
     with pytest.raises(IntegrityError):
         async with db.begin_nested():
@@ -131,7 +138,16 @@ async def test_constraints(db: AsyncSession) -> None:
     hi, lo = sorted([a.id, b.id], reverse=True)
     stranger: UUID = (await make_user(db, "stranger")).id
 
-    await _rejects(db, User(email="kid@orbit.test", name="kid", birth_year=2012, is_adult=False))
+    kid_id = await make_identity(db, "kid@orbit.test", "kid")
+    await _rejects(
+        db, User(id=kid_id, email="kid@orbit.test", name="kid", birth_year=2012, is_adult=False)
+    )
+    await _rejects(
+        db,
+        User(
+            id=uuid4(), email="ghost@orbit.test", name="no identity", birth_year=2000, is_adult=True
+        ),
+    )
     await _rejects(db, UserRoot(user_id=a.id, kind="childhood", slot=4, city="pune"))
     await _rejects(db, UserRoot(user_id=a.id, kind="birth", slot=0, city="pune", school="x"))
     await _rejects(db, Social(room_code=room.code, from_user=a.id, to_user=a.id, kind="follow"))

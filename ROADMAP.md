@@ -26,7 +26,7 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 - [x] **0.3 Local infra.** `infra/docker-compose.yml` with Postgres, Redis and Neo4j (with the GDS plugin).
   *Done when:* `docker compose up` starts all three and each one answers a ping.
 - [x] **0.4 Tooling.** Python 3.13 via `uv`, `ruff`, `pytest`; ADR rules 2–4 checked by `api/tests/test_architecture.py` (grimp import graph; import-linter couldn't express rule 2 or handle not-yet-installed packages). Web: ESLint + Prettier, TypeScript strict plus `noUncheckedIndexedAccess`. GitHub Actions runs lint, format, typecheck, tests and build on push. Known: 7 moderate `npm audit` findings from a `minimatch` pinned inside `eslint-config-next` (lint-time only).
-- [ ] **0.5 Type generation.** Script that dumps FastAPI's OpenAPI spec and runs `openapi-typescript` into `web/src/lib/api/types.ts`; CI fails if the generated file is stale.
+- [x] **0.5 Type generation.** `scripts/gen-api-types.sh` exports FastAPI's OpenAPI (plus the WebSocket `RoomEvent` union) and runs `openapi-typescript` into `web/src/lib/api/types.ts`; CI job `api-types` fails if it is stale.
 
 ## Phase 1 — Backend skeleton and database
 
@@ -40,15 +40,15 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 
 ## Phase 2 — Auth and accounts
 
-- [ ] **2.1 Next.js app shell.** App Router, Tailwind, basic layout, API client wrapper.
-- [ ] **2.2 Dev login stub.** A dev-only "sign in as user N" so later phases are not blocked on OAuth setup.
-- [ ] **2.3 Auth.js providers.** Google + email magic link (e.g. Resend for email).
-- [ ] **2.4 API auth bridge.** Next.js mints a short-lived signed token from the session; FastAPI verifies it in a `current_user` dependency. Same token authenticates the WebSocket.
+- [x] **2.1 Next.js app shell.** App Router, Tailwind, phone-first UI pieces (`components/ui.tsx`), typed API clients (`lib/api/server.ts` for server components and actions, `lib/api/browser.ts` for client components).
+- [x] **2.2 Dev login stub.** `/api/dev-login?email=devN@orbit.test` (dev only, `.test` addresses only) runs the real magic-link flow and redirects; buttons on `/signin`.
+- [x] **2.3 Sign-in providers.** Better Auth instead of Auth.js ([ADR 0002](docs/adr/0002-better-auth.md)): Google (enabled when `GOOGLE_CLIENT_ID/SECRET` are set) + email magic link (Resend; printed to the console in dev). Identity tables in Postgres schema `auth` (migration 3).
+- [x] **2.4 API auth bridge.** Better Auth's `jwt` plugin issues 15-minute EdDSA tokens; FastAPI verifies them against `/api/auth/jwks` (`core/auth.py`, `IdentityDep`); `accounts.deps.CurrentUserDep` requires a profile. Same verifier will authenticate WebSockets.
   *Done when:* an unauthenticated API call returns 401 and an authenticated one returns the user.
-- [ ] **2.5 User upsert on first sign-in.**
-- [ ] **2.6 Age gate.** Birth year once at signup; under 18 → no account row, nothing stored (test this).
-- [ ] **2.7 Consent notice screen.** Standalone notice before the first room; must say closeness scores are visible to everyone in the room. Stores `consented_at`.
-- [ ] **2.8 Roots.** `GET/PUT /me/roots` + form (birth city, school + city, up to 3 childhood cities, all optional). City/school normalisation with an alias table ("Bombay → Mumbai").
+- [x] **2.5 Profile creation.** The Orbit `users` row (same id as `auth.user`) is created at the age gate, not at sign-in, so nothing is stored for minors. `GET /me` reports `onboarded` / `consented`.
+- [x] **2.6 Age gate.** `POST /me/age` takes the full date of birth for an exact 18+ check and stores only the year; under 18 deletes the sign-in identity (sessions, accounts cascade) and stores nothing (tested in API and in the browser).
+- [x] **2.7 Consent notice screen.** `/consent` (draft text; lawyer review is 10.7) says scores are visible to everyone in the room; `POST /me/consent` stores `consented_at`.
+- [x] **2.8 Roots.** `GET/PUT /me/roots` + `/roots` form, offered after consent and editable from home. Stored as typed; `accounts/roots.py` normalises for matching (case, accents, punctuation, 21 city aliases).
 
 ## Phase 3 — Rooms, lobby and realtime  → **M1**
 
@@ -137,6 +137,6 @@ Pure functions first, all unit-tested, no database.
 
 1. **Neo4j GDS on the free tier.** Aura Free does not include Graph Data Science, so Louvain needs the Python fallback in 6.4 (or a paid tier / self-hosted Neo4j).
 2. **Job runner not named.** Round timers, scoring, hourly expiry and the daily curator all need one. Decided: `arq` on Redis (ADR 0001).
-3. **Auth.js → FastAPI.** The design says "session cookie from Auth.js" but not how FastAPI verifies it; 2.4 proposes a short-lived signed token.
+3. **Auth.js → FastAPI.** Resolved by [ADR 0002](docs/adr/0002-better-auth.md): Better Auth issues JWTs, FastAPI verifies them via JWKS.
 4. **Missing endpoints.** Leave-and-delete and host kick (3.8).
 5. **Missing columns.** `users.consented_at` and an avatar field for `member_joined` (1.3).

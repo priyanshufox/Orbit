@@ -14,7 +14,11 @@ from redis.asyncio import Redis
 
 
 class _Event(BaseModel):
-    model_config = ConfigDict(frozen=True, populate_by_name=True)
+    # Defaulted fields (like `type`) are always sent, so mark them required in the schema; the
+    # generated TypeScript then narrows on `event.type`.
+    model_config = ConfigDict(
+        frozen=True, populate_by_name=True, json_schema_serialization_defaults_required=True
+    )
 
 
 class MemberJoined(_Event):

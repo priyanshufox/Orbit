@@ -1,21 +1,54 @@
-"""Persistent: users and their optional roots. Survive room expiry; removed by DELETE /me."""
+"""Persistent: users and their optional roots. Survive room expiry; removed by DELETE /me.
+
+Sign-in identity lives in `auth.user`, owned by Better Auth in the web app (tables created by
+migration 3). An Orbit `users` row is created only after the age gate, with the same id, and is
+deleted with the identity.
+"""
 
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, SmallInteger, String, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    ForeignKey,
+    SmallInteger,
+    String,
+    Table,
+    Text,
+    Uuid,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
-from orbit.core.db import Base, created_at, uuid_pk
+from orbit.core.db import Base, created_at
 
 ROOT_KINDS = ("birth", "school", "childhood")
 MAX_CHILDHOOD_CITIES = 3
+
+AUTH_SCHEMA = "auth"
+
+# Read-mostly view of Better Auth's identity table (only the columns Orbit uses). Its schema is
+# managed by migration 3, not by autogenerate (migrations/env.py skips the auth schema).
+auth_user = Table(
+    "user",
+    Base.metadata,
+    Column("id", Uuid, primary_key=True),
+    Column("email", Text, nullable=False),
+    Column("name", Text, nullable=False),
+    Column("image", Text),
+    Column("emailVerified", Boolean, nullable=False),
+    schema=AUTH_SCHEMA,
+)
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[UUID] = uuid_pk()
+    id: Mapped[UUID] = mapped_column(
+        ForeignKey(auth_user.c.id, ondelete="CASCADE"), primary_key=True
+    )
     email: Mapped[str] = mapped_column(String(320), unique=True)
     name: Mapped[str] = mapped_column(String(80))
     avatar_url: Mapped[str | None] = mapped_column(Text)

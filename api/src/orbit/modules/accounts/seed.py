@@ -9,7 +9,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from orbit.modules.accounts.models import User, UserRoot
+from orbit.modules.accounts.models import User, UserRoot, auth_user
 
 DEV_USERS = [
     # email, name, birth_year
@@ -65,6 +65,12 @@ async def seed(session: AsyncSession) -> int:
         for email, rows in DEV_ROOTS.items()
         for k, s, c, sch in rows
     ]
+    # Sign-in identities first (Better Auth's table); profiles share their ids.
+    identities = [
+        {"id": u["id"], "email": u["email"], "name": u["name"], "emailVerified": True}
+        for u in users
+    ]
+    await session.execute(insert(auth_user).values(identities).on_conflict_do_nothing())
     res = await session.execute(insert(User).values(users).on_conflict_do_nothing())
     await session.execute(insert(UserRoot).values(roots).on_conflict_do_nothing())
     return res.rowcount

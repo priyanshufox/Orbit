@@ -51,6 +51,25 @@ jobs:
       - name: Test (includes architecture rules)
         run: uv run pytest
 
+  api-types:
+    # Fails if web/src/lib/api is stale: run ./scripts/gen-api-types.sh and commit.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: cd api && uv sync --locked
+      - run: cd web && npm ci
+      - run: ./scripts/gen-api-types.sh
+      - name: Generated API types are committed and current
+        run: git diff --exit-code -- web/src/lib/api
+
   web:
     runs-on: ubuntu-latest
     defaults:
@@ -73,3 +92,6 @@ jobs:
         run: npm run typecheck
       - name: Build
         run: npm run build
+        env:
+          # Build-time only; Better Auth refuses its default secret. Not used to sign anything.
+          BETTER_AUTH_SECRET: ci-build-placeholder-secret-0123456789abcdef

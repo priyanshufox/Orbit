@@ -29,13 +29,20 @@ class Settings(BaseSettings):
     neo4j_user: str = "neo4j"
     neo4j_password: SecretStr = SecretStr("orbit-dev-password")
 
-    api_token_secret: SecretStr = SecretStr("change-me")
+    # Sign-in tokens come from Better Auth in the web app (task 2.4).
+    auth_jwks_url: str = "http://localhost:3000/api/auth/jwks"
+    auth_issuer: str = "http://localhost:3000"
+    auth_audience: str | None = None  # defaults to the issuer, as Better Auth does
 
     log_level: str = "INFO"
 
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @property
+    def token_audience(self) -> str:
+        return self.auth_audience or self.auth_issuer
 
 
 @lru_cache

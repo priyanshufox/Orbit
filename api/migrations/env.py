@@ -35,6 +35,15 @@ def load_all_models() -> None:
 load_all_models()
 target_metadata = Base.metadata
 
+# Better Auth's tables (schema "auth") are written by hand in migration 3 from the SQL that its
+# CLI generates; autogenerate must not try to manage them.
+UNMANAGED_SCHEMAS = {"auth"}
+
+
+def include_object(obj, name, type_, reflected, compare_to) -> bool:
+    table = obj if type_ == "table" else getattr(obj, "table", None)
+    return getattr(table, "schema", None) not in UNMANAGED_SCHEMAS
+
 
 def database_url() -> str:
     return config.attributes.get("url") or get_settings().database_url
@@ -47,13 +56,19 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_object=include_object,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

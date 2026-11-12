@@ -5,17 +5,28 @@ and Redis database 1. Each `db` test runs inside a transaction that is rolled ba
 """
 
 import asyncio
-from collections.abc import AsyncIterator, Iterator
+import time
+from collections.abc import AsyncIterator, Callable, Iterator
 from pathlib import Path
+from typing import Any
+from uuid import UUID, uuid4
 
+import jwt
 import pytest
 from alembic import command
 from alembic.config import Config
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from fastapi import FastAPI
+from httpx2 import ASGITransport, AsyncClient
 from redis.asyncio import Redis
-from sqlalchemy import make_url, text
+from sqlalchemy import insert, make_url, text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
+from orbit.core.auth import TokenVerifier
 from orbit.core.config import Settings
+from orbit.core.db import get_session
+from orbit.main import create_app
+from orbit.modules.accounts.models import auth_user
 
 API_DIR = Path(__file__).resolve().parents[1]
 
@@ -93,3 +104,87 @@ async def redis(test_settings: Settings) -> AsyncIterator[Redis]:
     client = Redis.from_url(test_settings.redis_url, decode_responses=True)
     yield client
     await client.aclose()
+
+
+# --- Sign-in ---------------------------------------------------------------------------------
+
+ISSUER = "http://web.test"
+
+
+class _StaticKeys:
+    """Stands in for the web app's /api/auth/jwks: one Ed25519 key, as Better Auth uses."""
+
+    def __init__(self, private_key: Ed25519PrivateKey) -> None:
+        self._jwk = jwt.PyJWK.from_dict(
+            {
+                **jwt.algorithms.OKPAlgorithm.to_jwk(private_key.public_key(), as_dict=True),
+                "kid": "test-key",
+                "alg": "EdDSA",
+            }
+        )
+
+    def get_signing_key_from_jwt(self, token: str) -> jwt.PyJWK:
+        if jwt.get_unverified_header(token).get("kid") != "test-key":
+            raise jwt.PyJWKClientError("unknown kid")
+        return self._jwk
+
+
+_SIGNING_KEY = Ed25519PrivateKey.generate()
+
+TokenFactory = Callable[..., str]
+
+
+@pytest.fixture(scope="session")
+def make_token() -> TokenFactory:
+    """`make_token(user_id, email, **claims)` -> a JWT shaped like Better Auth's."""
+
+    def factory(
+        user_id: UUID, email: str, *, key: Ed25519PrivateKey | None = None, **claims: Any
+    ) -> str:
+        now = int(time.time())
+        payload = {
+            "sub": str(user_id),
+            "email": email,
+            "iss": ISSUER,
+            "aud": ISSUER,
+            "iat": now,
+            "exp": now + 900,
+            **claims,
+        }
+        return jwt.encode(
+            payload, key or _SIGNING_KEY, algorithm="EdDSA", headers={"kid": "test-key"}
+        )
+
+    return factory
+
+
+@pytest.fixture(scope="session")
+def token_verifier() -> TokenVerifier:
+    return TokenVerifier(_StaticKeys(_SIGNING_KEY), issuer=ISSUER, audience=ISSUER)
+
+
+async def make_identity(db: AsyncSession, email: str, name: str = "") -> UUID:
+    """What Better Auth writes when someone signs in for the first time."""
+    user_id = uuid4()
+    await db.execute(
+        insert(auth_user).values(id=user_id, email=email, name=name, emailVerified=True)
+    )
+    return user_id
+
+
+@pytest.fixture
+def app(test_settings: Settings, token_verifier: TokenVerifier, db: AsyncSession) -> FastAPI:
+    """The API wired to the rolled-back test session and the test signing key."""
+    application = create_app(test_settings, token_verifier=token_verifier)
+
+    async def _session() -> AsyncIterator[AsyncSession]:
+        yield db
+
+    application.dependency_overrides[get_session] = _session
+    return application
+
+
+@pytest.fixture
+async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://api.test") as c:
+        yield c

@@ -1,0 +1,666 @@
+{
+  "components": {
+    "schemas": {
+      "AgeGate": {
+        "properties": {
+          "date_of_birth": {
+            "format": "date",
+            "title": "Date Of Birth",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date_of_birth"
+        ],
+        "title": "AgeGate",
+        "type": "object"
+      },
+      "GameStarted": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          },
+          "type": {
+            "const": "game_started",
+            "default": "game_started",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "ends_at"
+        ],
+        "title": "GameStarted",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "env": {
+            "title": "Env",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "env"
+        ],
+        "title": "Health",
+        "type": "object"
+      },
+      "Me": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "consented": {
+            "title": "Consented",
+            "type": "boolean"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "onboarded": {
+            "title": "Onboarded",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "name",
+          "avatar_url",
+          "onboarded",
+          "consented"
+        ],
+        "title": "Me",
+        "type": "object"
+      },
+      "MemberJoined": {
+        "properties": {
+          "avatar": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Avatar"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "type": {
+            "const": "member_joined",
+            "default": "member_joined",
+            "title": "Type",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "user_id",
+          "name",
+          "avatar"
+        ],
+        "title": "MemberJoined",
+        "type": "object"
+      },
+      "Progress": {
+        "properties": {
+          "finished": {
+            "title": "Finished",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "type": {
+            "const": "progress",
+            "default": "progress",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "finished",
+          "total"
+        ],
+        "title": "Progress",
+        "type": "object"
+      },
+      "Readiness": {
+        "properties": {
+          "postgres": {
+            "title": "Postgres",
+            "type": "boolean"
+          },
+          "redis": {
+            "title": "Redis",
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "ok",
+              "degraded"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "postgres",
+          "redis"
+        ],
+        "title": "Readiness",
+        "type": "object"
+      },
+      "Reveal": {
+        "properties": {
+          "graph_url": {
+            "title": "Graph Url",
+            "type": "string"
+          },
+          "type": {
+            "const": "reveal",
+            "default": "reveal",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "graph_url"
+        ],
+        "title": "Reveal",
+        "type": "object"
+      },
+      "RoomClosing": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "type": {
+            "const": "room_closing",
+            "default": "room_closing",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "expires_at"
+        ],
+        "title": "RoomClosing",
+        "type": "object"
+      },
+      "RoomEvent": {
+        "discriminator": {
+          "mapping": {
+            "game_started": "#/components/schemas/GameStarted",
+            "member_joined": "#/components/schemas/MemberJoined",
+            "progress": "#/components/schemas/Progress",
+            "reveal": "#/components/schemas/Reveal",
+            "room_closing": "#/components/schemas/RoomClosing",
+            "scoring": "#/components/schemas/Scoring",
+            "social_added": "#/components/schemas/SocialAdded"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/MemberJoined"
+          },
+          {
+            "$ref": "#/components/schemas/GameStarted"
+          },
+          {
+            "$ref": "#/components/schemas/Progress"
+          },
+          {
+            "$ref": "#/components/schemas/Scoring"
+          },
+          {
+            "$ref": "#/components/schemas/Reveal"
+          },
+          {
+            "$ref": "#/components/schemas/SocialAdded"
+          },
+          {
+            "$ref": "#/components/schemas/RoomClosing"
+          }
+        ]
+      },
+      "Roots": {
+        "description": "All optional. PUT replaces everything; send empty values to clear.",
+        "properties": {
+          "birth_city": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth City"
+          },
+          "childhood_cities": {
+            "items": {
+              "maxLength": 120,
+              "minLength": 1,
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Childhood Cities",
+            "type": "array"
+          },
+          "school": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/School"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "Roots",
+        "type": "object"
+      },
+      "School": {
+        "properties": {
+          "city": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "city"
+        ],
+        "title": "School",
+        "type": "object"
+      },
+      "Scoring": {
+        "properties": {
+          "type": {
+            "const": "scoring",
+            "default": "scoring",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "title": "Scoring",
+        "type": "object"
+      },
+      "SocialAdded": {
+        "properties": {
+          "from": {
+            "format": "uuid",
+            "title": "From",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "follow",
+              "like_profile"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "to": {
+            "format": "uuid",
+            "title": "To",
+            "type": "string"
+          },
+          "type": {
+            "const": "social_added",
+            "default": "social_added",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "from",
+          "to",
+          "kind"
+        ],
+        "title": "SocialAdded",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "title": "Orbit API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "description": "The process is up. Does not touch dependencies.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "description": "Postgres and Redis answer. Returns 503 if either is down.",
+        "operationId": "ready_health_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready",
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/me": {
+      "get": {
+        "description": "Who am I, and how far through onboarding (age gate, consent).",
+        "operationId": "get_me_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Me",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/me/age": {
+      "post": {
+        "description": "Age gate (task 2.6). Adults get an Orbit profile; for under-18s the sign-in identity is\ndeleted and nothing is stored.",
+        "operationId": "pass_age_gate_me_age_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgeGate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "Under 18: the sign-in was deleted"
+          },
+          "422": {
+            "description": "Impossible date of birth"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Pass Age Gate",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/me/consent": {
+      "post": {
+        "description": "Record agreement to the data notice (task 2.7). Idempotent.",
+        "operationId": "give_consent_me_consent_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Give Consent",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/me/roots": {
+      "get": {
+        "operationId": "get_roots_me_roots_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Roots"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Roots",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "put": {
+        "description": "Replace all roots (task 2.8). Every field is optional.",
+        "operationId": "put_roots_me_roots_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Roots"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Roots"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Roots",
+        "tags": [
+          "accounts"
+        ]
+      }
+    }
+  }
+}

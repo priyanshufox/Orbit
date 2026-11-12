@@ -4,7 +4,7 @@ See who's in your orbit. Friends join a room by QR, play a 5-minute round of que
 
 - Design: [Orbit — System Design](https://claude.ai/artifact/TroPBVeD5GJMbLD7iSp7na)
 - Plan: [ROADMAP.md](ROADMAP.md)
-- Architecture: [ADR 0001 — Modular monolith](docs/adr/0001-modular-monolith.md)
+- Architecture: [ADR 0001 — Modular monolith](docs/adr/0001-modular-monolith.md), [ADR 0002 — Better Auth sign-in](docs/adr/0002-better-auth.md)
 
 ## Layout
 
@@ -20,6 +20,8 @@ See who's in your orbit. Friends join a room by QR, play a 5-minute round of que
 ```bash
 cp .env.example .env
 ```
+
+Then set `BETTER_AUTH_SECRET` in `.env` (`openssl rand -base64 32`). Both apps read this one root file.
 
 Local infra (Postgres 18, Redis 8, Neo4j 2026.10 with Graph Data Science), needs Docker running:
 
@@ -40,6 +42,18 @@ Web:
 
 ```bash
 cd web && npm install && npm run dev
+```
+
+Sign-in at http://localhost:3000/signin:
+
+- **Dev login:** buttons for the seeded `dev1`–`dev5` users (development only). Any `name@orbit.test` works through `/api/dev-login?email=...` and starts a new user at the age gate.
+- **Email magic link:** without `RESEND_API_KEY`, the link is printed in the web server's console.
+- **Google:** create an OAuth client in Google Cloud Console with redirect URI `http://localhost:3000/api/auth/callback/google`, then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The button appears once both are set.
+
+After changing an API route, model or WebSocket event, regenerate the web app's types (CI checks they are current):
+
+```bash
+./scripts/gen-api-types.sh
 ```
 
 API (needs [uv](https://docs.astral.sh/uv/) and the local infra running). First time, create the tables and load dev data:

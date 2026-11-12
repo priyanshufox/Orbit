@@ -21,10 +21,25 @@ See who's in your orbit. Friends join a room by QR, play a 5-minute round of que
 cp .env.example .env
 ```
 
+Local infra (Postgres 18, Redis 8, Neo4j 2026.10 with Graph Data Science), needs Docker running:
+
+```bash
+docker compose -f infra/docker-compose.yml --env-file .env up -d --wait
+```
+
+| Service | Address | Dev login |
+|---|---|---|
+| Postgres | `localhost:5432` | `orbit` / `orbit`, database `orbit` |
+| Redis | `localhost:6379` | none |
+| Neo4j bolt | `localhost:7687` | `neo4j` / `NEO4J_PASSWORD` from `.env` |
+| Neo4j browser | http://localhost:7474 | same |
+
+Stop with `docker compose -f infra/docker-compose.yml down`; add `-v` to also wipe the data volumes. The first Neo4j start downloads the GDS plugin, so it takes about a minute.
+
 Web:
 
 ```bash
 cd web && npm install && npm run dev
 ```
 
-API and local infra setup arrive with tasks 0.3, 0.4 and 1.1.
+API setup arrives with tasks 0.4 and 1.1.

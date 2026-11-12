@@ -23,7 +23,7 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 - [x] **0.1 Close blocking decisions.** Reveal: everything public (host screen and phones show every pair's score). Graph library: Cytoscape.js. Snapshot: JSON now, PNG export later. Room cap: 20. Recorded in the design doc.
 - [x] **0.1b Roots on a public reveal.** Generic "Shared roots" edge reason only; school and city names never leave the server.
 - [x] **0.2 Monorepo layout.** `git init`; scaffold the tree from ADR 0001: `web/` (Next.js, `app/(account)`, `app/host/[code]`, `app/play/[code]`, `features/`, `lib/api/`), `api/src/orbit/` (`core/`, the 7 empty modules, `main.py`, `worker.py`), `infra/`, `docs/adr/`; root README and `.env.example`.
-- [ ] **0.3 Local infra.** `infra/docker-compose.yml` with Postgres, Redis and Neo4j (with the GDS plugin).
+- [x] **0.3 Local infra.** `infra/docker-compose.yml` with Postgres, Redis and Neo4j (with the GDS plugin).
   *Done when:* `docker compose up` starts all three and each one answers a ping.
 - [ ] **0.4 Tooling.** Python: `uv`, `ruff`, `pytest`, `import-linter` (contracts: modules don't import each other's `models`/`repo`; `scoring.domain` imports no infra; only `graph` imports the Neo4j driver). Web: ESLint, Prettier, TypeScript strict. GitHub Actions runs lint and tests on push.
 - [ ] **0.5 Type generation.** Script that dumps FastAPI's OpenAPI spec and runs `openapi-typescript` into `web/src/lib/api/types.ts`; CI fails if the generated file is stale.

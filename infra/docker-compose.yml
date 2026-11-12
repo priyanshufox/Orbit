@@ -1,0 +1,65 @@
+# Local infrastructure for Orbit (roadmap task 0.3).
+# Run from the repo root:  docker compose -f infra/docker-compose.yml --env-file .env up -d
+# Values fall back to dev defaults when .env is missing; they match .env.example.
+
+name: orbit
+
+services:
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: orbit
+      POSTGRES_PASSWORD: orbit
+      POSTGRES_DB: orbit
+    ports:
+      - "5432:5432"
+    volumes:
+      # Postgres 18+ images keep data under a versioned subfolder of this path.
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orbit -d orbit"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8.8.4-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  neo4j:
+    image: neo4j:2026.10.2-community
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-orbit-dev-password}
+      # Graph Data Science for Louvain clustering (task 6.4). Downloaded on first start.
+      NEO4J_PLUGINS: '["graph-data-science"]'
+      NEO4J_dbms_security_procedures_unrestricted: gds.*
+      NEO4J_dbms_security_procedures_allowlist: gds.*
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1g
+      NEO4J_server_memory_pagecache_size: 512m
+    ports:
+      - "7474:7474" # browser UI
+      - "7687:7687" # bolt
+    volumes:
+      - neo4j-data:/data
+      - neo4j-plugins:/plugins
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1'"]
+      interval: 10s
+      timeout: 10s
+      retries: 18
+      start_period: 30s
+
+volumes:
+  postgres-data:
+  redis-data:
+  neo4j-data:
+  neo4j-plugins:

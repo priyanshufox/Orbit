@@ -30,7 +30,7 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 
 ## Phase 1 — Backend skeleton and database
 
-- [ ] **1.1 FastAPI skeleton.** App factory in `main.py`, `core/config.py` (`pydantic-settings`), `GET /health`, structured logging; `worker.py` with an empty arq `WorkerSettings` that starts cleanly.
+- [x] **1.1 FastAPI skeleton.** App factory in `main.py`, `core/config.py` (`pydantic-settings`), `GET /health`, structured logging; `worker.py` with an empty arq `WorkerSettings` that starts cleanly.
 - [ ] **1.1b Event bus.** `core/events.py`: one `publish(room_code, event)` function and the WebSocket event union (Pydantic discriminated union).
 - [ ] **1.2 Database layer.** SQLAlchemy 2 (async) + Alembic, session dependency, test database fixture.
 - [ ] **1.3 Persistent tables migration.** `users` (add `consented_at`, `avatar_url`), `user_roots`, `graph_snapshots`, `content`, `questions`.

@@ -42,11 +42,17 @@ Web:
 cd web && npm install && npm run dev
 ```
 
-API (needs [uv](https://docs.astral.sh/uv/); the server itself arrives with task 1.1):
+API (needs [uv](https://docs.astral.sh/uv/) and the local infra running). Two processes, two terminals:
 
 ```bash
-cd api && uv sync && uv run pytest
+cd api && uv sync && uv run uvicorn orbit.main:app --reload
 ```
+
+```bash
+cd api && uv run arq orbit.worker.WorkerSettings
+```
+
+The API serves `GET /health` and interactive docs at http://localhost:8000/docs (hidden when `APP_ENV=production`). Logs are readable console lines in development and JSON lines in production.
 
 ## Checks (same as CI)
 

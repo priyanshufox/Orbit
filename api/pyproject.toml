@@ -4,8 +4,13 @@ version = "0.1.0"
 description = "Orbit API and worker (modular monolith)"
 readme = "README.md"
 requires-python = ">=3.13"
-# Runtime dependencies (FastAPI, SQLAlchemy, arq, ...) are added in tasks 1.1–1.2.
-dependencies = []
+dependencies = [
+    "arq>=0.28.0",
+    "fastapi>=0.162.5",
+    "pydantic-settings>=2.16.2",
+    "structlog>=26.1.0",
+    "uvicorn[standard]>=0.54.0",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -17,6 +22,7 @@ packages = ["src/orbit"]
 [dependency-groups]
 dev = [
     "grimp>=3.19",
+    "httpx2>=2.16.0",
     "pytest>=9.2.0",
     "ruff>=0.17.5",
 ]

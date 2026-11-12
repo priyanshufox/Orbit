@@ -42,7 +42,13 @@ Web:
 cd web && npm install && npm run dev
 ```
 
-API (needs [uv](https://docs.astral.sh/uv/) and the local infra running). Two processes, two terminals:
+API (needs [uv](https://docs.astral.sh/uv/) and the local infra running). First time, create the tables and load dev data:
+
+```bash
+cd api && uv sync && uv run alembic upgrade head && uv run python -m orbit.seed
+```
+
+Then two processes, two terminals:
 
 ```bash
 cd api && uv sync && uv run uvicorn orbit.main:app --reload
@@ -52,11 +58,13 @@ cd api && uv sync && uv run uvicorn orbit.main:app --reload
 cd api && uv run arq orbit.worker.WorkerSettings
 ```
 
-The API serves `GET /health` and interactive docs at http://localhost:8000/docs (hidden when `APP_ENV=production`). Logs are readable console lines in development and JSON lines in production.
+New migration after changing a `models.py`: `uv run alembic revision --autogenerate -m "what changed"`, then review the file.
+
+The API serves `GET /health`, `GET /health/ready` (Postgres + Redis) and interactive docs at http://localhost:8000/docs (hidden when `APP_ENV=production`). Logs are readable console lines in development and JSON lines in production.
 
 ## Checks (same as CI)
 
 | | Lint | Format | Types | Tests |
 |---|---|---|---|---|
-| `api/` | `uv run ruff check .` | `uv run ruff format --check .` | | `uv run pytest` (includes the ADR module-boundary rules) |
+| `api/` | `uv run ruff check .` | `uv run ruff format --check .` | | `uv run alembic check`, `uv run pytest` (needs local infra; includes the ADR module-boundary rules) |
 | `web/` | `npm run lint` | `npm run format:check` | `npm run typecheck` | `npm run build` |

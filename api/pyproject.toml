@@ -5,9 +5,13 @@ description = "Orbit API and worker (modular monolith)"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "alembic>=1.20.1",
     "arq>=0.28.0",
+    "asyncpg>=0.32.0",
     "fastapi>=0.162.5",
     "pydantic-settings>=2.16.2",
+    "redis>=5.3",
+    "sqlalchemy[asyncio]>=2.1.8",
     "structlog>=26.1.0",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -24,6 +28,7 @@ dev = [
     "grimp>=3.19",
     "httpx2>=2.16.0",
     "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
     "ruff>=0.17.5",
 ]
 
@@ -38,7 +43,12 @@ ignore = []
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"] # assert is how pytest works
+"migrations/versions/**" = ["E501"] # generated SQL strings
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers"
+asyncio_mode = "auto"
+# One event loop for the whole run, so session-scoped DB/Redis fixtures can be shared.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"

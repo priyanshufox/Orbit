@@ -31,12 +31,12 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 ## Phase 1 — Backend skeleton and database
 
 - [x] **1.1 FastAPI skeleton.** App factory in `main.py`, `core/config.py` (`pydantic-settings`), `GET /health`, structured logging; `worker.py` with an empty arq `WorkerSettings` that starts cleanly.
-- [ ] **1.1b Event bus.** `core/events.py`: one `publish(room_code, event)` function and the WebSocket event union (Pydantic discriminated union).
-- [ ] **1.2 Database layer.** SQLAlchemy 2 (async) + Alembic, session dependency, test database fixture.
-- [ ] **1.3 Persistent tables migration.** `users` (add `consented_at`, `avatar_url`), `user_roots`, `graph_snapshots`, `content`, `questions`.
-- [ ] **1.4 Ephemeral tables migration.** `rooms`, `room_members`, `answers`, `reactions`, `social`, `scores`, all with `ON DELETE CASCADE` from `rooms`.
+- [x] **1.1b Event bus.** `core/events.py`: one `publish(redis, room_code, event)` function and the WebSocket event union (Pydantic discriminated union); `core/redis.py` client.
+- [x] **1.2 Database layer.** SQLAlchemy 2 (async) + Alembic, session dependency, test database fixture; `GET /health/ready` checks Postgres and Redis.
+- [x] **1.3 Persistent tables migration.** `users` (add `consented_at`, `avatar_url`), `user_roots`, `graph_snapshots`, `content`, `questions`.
+- [x] **1.4 Ephemeral tables migration.** `rooms`, `room_members`, `answers`, `reactions`, `social`, `scores`. Room-scoped rows reference `room_members (room_code, user_id)` with `ON DELETE CASCADE`, so deleting a room or removing one member (task 3.8) cascades.
   *Done when:* deleting one `rooms` row removes every row for that room (test).
-- [ ] **1.5 Dev seed script.** 5 fake users, 15 questions, 40 fake fact cards.
+- [x] **1.5 Dev seed script.** 5 fake users, 15 questions, 40 fake fact cards.
 
 ## Phase 2 — Auth and accounts
 

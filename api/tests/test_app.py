@@ -38,6 +38,21 @@ def test_cors_allows_web_origin_only() -> None:
     assert "access-control-allow-origin" not in bad.headers
 
 
+def test_ready_when_postgres_and_redis_answer(test_settings: Settings, migrated_db: str) -> None:
+    with TestClient(create_app(test_settings)) as client:
+        res = client.get("/health/ready")
+    assert res.status_code == 200
+    assert res.json() == {"status": "ok", "postgres": True, "redis": True}
+
+
+def test_not_ready_when_redis_is_down(test_settings: Settings, migrated_db: str) -> None:
+    broken = test_settings.model_copy(update={"redis_url": "redis://localhost:1/0"})
+    with TestClient(create_app(broken)) as client:
+        res = client.get("/health/ready")
+    assert res.status_code == 503
+    assert res.json() == {"status": "degraded", "postgres": True, "redis": False}
+
+
 def test_docs_hidden_in_production() -> None:
     with make_client(app_env="production") as client:
         assert client.get("/docs").status_code == 404

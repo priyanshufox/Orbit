@@ -14,7 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from orbit.core import health
 from orbit.core.config import Settings, get_settings
+from orbit.core.db import create_engine, create_sessionmaker
 from orbit.core.logging import configure_logging
+from orbit.core.redis import create_redis
 
 log = structlog.get_logger("orbit.api")
 
@@ -24,10 +26,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(settings.log_level, json=settings.is_production)
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # Clients connect lazily, so startup succeeds even if a dependency is briefly down;
+        # /health/ready reports it.
+        engine = create_engine(settings.database_url)
+        app.state.sessionmaker = create_sessionmaker(engine)
+        app.state.redis = create_redis(settings.redis_url)
         log.info("api.startup", env=settings.app_env)
-        yield
-        log.info("api.shutdown")
+        try:
+            yield
+        finally:
+            await app.state.redis.aclose()
+            await engine.dispose()
+            log.info("api.shutdown")
 
     app = FastAPI(
         title="Orbit API",

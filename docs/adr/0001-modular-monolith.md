@@ -27,13 +27,13 @@ orbit/
 │       └── lib/api/             generated types, fetch client, WebSocket client
 ├── api/
 │   ├── src/orbit/
-│   │   ├── core/                config, db, redis, neo4j, auth, event bus
+│   │   ├── core/                config, db, redis, auth, event bus
 │   │   ├── modules/
 │   │   │   ├── accounts/        users, age gate, consent, roots
 │   │   │   ├── rooms/           create/join/leave, state machine, WebSocket
 │   │   │   ├── game/            questions, deck, answers, reactions, social
 │   │   │   ├── scoring/         domain/ (pure maths) + job
-│   │   │   ├── graph/           Neo4j projection, clustering, /graph view
+│   │   │   ├── graph/           Neo4j driver, projection, clustering, /graph view
 │   │   │   ├── content/         sources, tagging, moderation, curator
 │   │   │   └── privacy/         snapshots, expiry, account deletion
 │   │   ├── main.py              API process entry
@@ -48,9 +48,9 @@ Each module uses the same files (omit any it doesn't need): `router.py` (HTTP), 
 ## Rules
 
 1. **Routers are thin.** They parse input and call a service; no logic.
-2. **Modules talk through services only.** A module never imports another module's `models.py` or `repo.py`. Enforced in CI with `import-linter`.
+2. **Modules talk through services only.** A module never imports another module's `models.py` or `repo.py`. Enforced in CI by `api/tests/test_architecture.py`.
 3. **Scoring maths is pure.** `scoring/domain/` has no database, network or framework imports.
-4. **Only `graph` talks to Neo4j.** Postgres is the source of truth; Neo4j can always be rebuilt from it. The Python Louvain fallback lives here too.
+4. **Only `graph` talks to Neo4j.** It owns the driver too. Postgres is the source of truth; Neo4j can always be rebuilt from it. The Python Louvain fallback lives here too.
 5. **Types are generated, never copied.** Frontend types come from FastAPI's OpenAPI spec via `openapi-typescript`. WebSocket events are one Pydantic discriminated union, exported the same way.
 6. **One event bus.** All realtime events go through `core/events.py` → Redis channel `room:{code}`. Modules never touch sockets directly.
 
@@ -63,5 +63,5 @@ Each module uses the same files (omit any it doesn't need): `router.py` (HTTP), 
 ## Consequences
 
 - One CI pipeline, one API image, one place to change contracts.
-- Module boundaries depend on discipline plus `import-linter`; a broken rule fails CI.
+- Module boundaries depend on discipline plus an architecture test (`grimp` import graph) that checks rules 2–4; a broken rule fails CI.
 - Scaling is per process (`api` vs `worker`), not per module, which is fine for the MVP.

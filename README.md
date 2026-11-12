@@ -42,4 +42,15 @@ Web:
 cd web && npm install && npm run dev
 ```
 
-API setup arrives with tasks 0.4 and 1.1.
+API (needs [uv](https://docs.astral.sh/uv/); the server itself arrives with task 1.1):
+
+```bash
+cd api && uv sync && uv run pytest
+```
+
+## Checks (same as CI)
+
+| | Lint | Format | Types | Tests |
+|---|---|---|---|---|
+| `api/` | `uv run ruff check .` | `uv run ruff format --check .` | | `uv run pytest` (includes the ADR module-boundary rules) |
+| `web/` | `npm run lint` | `npm run format:check` | `npm run typecheck` | `npm run build` |

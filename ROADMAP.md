@@ -25,7 +25,7 @@ Tasks are numbered `phase.step`. Within a phase, do them in order unless marked 
 - [x] **0.2 Monorepo layout.** `git init`; scaffold the tree from ADR 0001: `web/` (Next.js, `app/(account)`, `app/host/[code]`, `app/play/[code]`, `features/`, `lib/api/`), `api/src/orbit/` (`core/`, the 7 empty modules, `main.py`, `worker.py`), `infra/`, `docs/adr/`; root README and `.env.example`.
 - [x] **0.3 Local infra.** `infra/docker-compose.yml` with Postgres, Redis and Neo4j (with the GDS plugin).
   *Done when:* `docker compose up` starts all three and each one answers a ping.
-- [ ] **0.4 Tooling.** Python: `uv`, `ruff`, `pytest`, `import-linter` (contracts: modules don't import each other's `models`/`repo`; `scoring.domain` imports no infra; only `graph` imports the Neo4j driver). Web: ESLint, Prettier, TypeScript strict. GitHub Actions runs lint and tests on push.
+- [x] **0.4 Tooling.** Python 3.13 via `uv`, `ruff`, `pytest`; ADR rules 2–4 checked by `api/tests/test_architecture.py` (grimp import graph; import-linter couldn't express rule 2 or handle not-yet-installed packages). Web: ESLint + Prettier, TypeScript strict plus `noUncheckedIndexedAccess`. GitHub Actions runs lint, format, typecheck, tests and build on push. Known: 7 moderate `npm audit` findings from a `minimatch` pinned inside `eslint-config-next` (lint-time only).
 - [ ] **0.5 Type generation.** Script that dumps FastAPI's OpenAPI spec and runs `openapi-typescript` into `web/src/lib/api/types.ts`; CI fails if the generated file is stale.
 
 ## Phase 1 — Backend skeleton and database

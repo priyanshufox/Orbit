@@ -2,6 +2,7 @@
 #   API:    docker run IMAGE                       (uvicorn, port 8000)
 #   Worker: docker run IMAGE arq orbit.worker.WorkerSettings
 #   Migrate before each release: docker run IMAGE alembic upgrade head
+#   Or all in one (hosts without a release step): docker run IMAGE sh start.sh
 FROM python:3.13-slim AS build
 COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /uvx /bin/
 WORKDIR /app
@@ -10,7 +11,7 @@ COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --locked --no-dev --no-install-project
 COPY src ./src
 COPY migrations ./migrations
-COPY alembic.ini ./
+COPY alembic.ini start.sh ./
 RUN uv sync --locked --no-dev
 
 FROM python:3.13-slim

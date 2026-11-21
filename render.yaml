@@ -15,9 +15,7 @@ services:
     rootDir: api
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: >-
-      sh -c "alembic upgrade head && python -m orbit.seed --banks &&
-      exec uvicorn orbit.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'"
+    dockerCommand: sh start.sh # migrate, load banks, then serve (api/start.sh)
     healthCheckPath: /health
     numInstances: 1 # the in-process worker must run exactly once
     envVars:

@@ -2,9 +2,10 @@
 
 from typing import Annotated
 
+import certifi
 import structlog
 from fastapi import Depends, Request
-from neo4j import AsyncDriver, AsyncGraphDatabase
+from neo4j import AsyncDriver, AsyncGraphDatabase, TrustCustomCAs
 
 # Other modules type against this alias so only `graph` imports the neo4j package (rule 4).
 GraphDriver = AsyncDriver
@@ -24,6 +25,16 @@ SCHEMA = [
 
 
 def create_driver(uri: str, user: str, password: str) -> AsyncDriver:
+    scheme, sep, rest = uri.partition("+s://")
+    if sep:
+        # Encrypted (e.g. Neo4j Aura): verify against certifi's CA bundle rather than the OS
+        # store, which on some machines (macOS + uv's Python) lacks Aura's root certificate.
+        return AsyncGraphDatabase.driver(
+            f"{scheme}://{rest}",
+            auth=(user, password),
+            encrypted=True,
+            trusted_certificates=TrustCustomCAs(certifi.where()),
+        )
     return AsyncGraphDatabase.driver(uri, auth=(user, password))
 
 

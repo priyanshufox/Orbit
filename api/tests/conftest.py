@@ -35,7 +35,9 @@ API_DIR = Path(__file__).resolve().parents[1]
 
 
 def _test_settings() -> Settings:
-    base = Settings()
+    # Always the local Docker services: never .env, which may point at cloud databases (the
+    # tests drop and recreate their database and delete graph nodes).
+    base = Settings(_env_file=None)
     db_url = make_url(base.database_url)
     db_url = db_url.set(database=f"{db_url.database}_test")
     redis_url = base.redis_url.rsplit("/", 1)[0] + "/1"

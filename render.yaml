@@ -1,0 +1,62 @@
+# Render Blueprint: the Orbit API (with the worker inside it) and Redis, on Render's free plan.
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo. See docs/deploy.md.
+#
+# Free-plan notes:
+# - Free instances have no background workers and no pre-deploy command, so the API runs the
+#   worker in-process (RUN_WORKER_IN_PROCESS) and runs migrations + bank seeding on start.
+# - The service sleeps after 15 minutes without traffic; an uptime pinger on /health keeps it up.
+# - Free Key Value keeps data in memory only; a restart can drop a pending round timer.
+services:
+  - type: web
+    name: orbit-api
+    runtime: docker
+    plan: free
+    region: singapore
+    rootDir: api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: >-
+      sh -c "alembic upgrade head && python -m orbit.seed --banks &&
+      exec uvicorn orbit.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'"
+    healthCheckPath: /health
+    numInstances: 1 # the in-process worker must run exactly once
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: PORT
+        value: "8000"
+      - key: RUN_WORKER_IN_PROCESS
+        value: "true"
+      - key: GRAPH_USE_GDS
+        value: "false" # Neo4j Aura Free has no Graph Data Science library
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: orbit-redis
+          property: connectionString
+      # Filled in on the Render dashboard (never committed):
+      - key: DATABASE_URL
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USER
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: WEB_URL
+        sync: false
+      - key: AUTH_JWKS_URL
+        sync: false
+      - key: AUTH_ISSUER
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: keyvalue
+    name: orbit-redis
+    plan: free
+    region: singapore
+    maxmemoryPolicy: noeviction # never drop queued jobs to make room
+    ipAllowList: [] # reachable only from services in this account

@@ -1,6 +1,6 @@
 # Deploying Orbit (task 10.5)
 
-Four pieces, as in the design: **Vercel** for the web app, **one container host** for the API, worker and Redis, **Neo4j Aura**, and **managed Postgres**. Nothing here has been deployed yet. Each step needs your own account, so do them in this order.
+Four pieces, as in the design: **Vercel** for the web app, **one container host** for the API, worker and Redis, **Neo4j Aura**, and **managed Postgres**. Section 3a is the free route (Render's free plan); 3b is a paid host with a separate worker. Nothing here has been deployed yet. Each step needs your own account, so do them in this order.
 
 ## 1. Postgres (managed)
 
@@ -13,9 +13,20 @@ Any Postgres 16+ works; the schema uses `gen_random_uuid()`. Good options in Ind
 
 ## 2. Neo4j
 
-Neo4j Aura Free works. It has no Graph Data Science library, so clustering falls back to Python Louvain automatically (task 6.4); `GRAPH_USE_GDS` can stay `true`. Note `NEO4J_URI` (`neo4j+s://...`), `NEO4J_USER` and `NEO4J_PASSWORD`.
+Neo4j Aura Free works. It has no Graph Data Science library, so clustering falls back to Python Louvain automatically (task 6.4); set `GRAPH_USE_GDS=false` to skip the failed GDS attempt. Aura Free pauses after a few days without use; resume it from the Aura console. Note `NEO4J_URI` (`neo4j+s://...`), `NEO4J_USER` and `NEO4J_PASSWORD`.
 
-## 3. API, worker and Redis (one container host)
+## 3a. Free: Render (API with the worker inside, plus Redis)
+
+Render's free plan has no background workers and no pre-deploy command, so the API runs the worker in-process (`RUN_WORKER_IN_PROCESS=true`) and runs migrations and bank seeding each time it starts. [`render.yaml`](../render.yaml) sets this up.
+
+1. Render dashboard -> **New -> Blueprint** -> pick the GitHub repo. It creates `orbit-api` (free web service, Singapore) and `orbit-redis` (free Key Value) and wires `REDIS_URL`.
+2. Fill in the variables it asks for: `DATABASE_URL`, `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD`, `WEB_URL`, `AUTH_JWKS_URL`, `AUTH_ISSUER` (as in the table below; use the Vercel domain from step 4, and update them once you know it), and optionally `ANTHROPIC_API_KEY` and `SENTRY_DSN`.
+3. The API's URL is `https://orbit-api-XXXX.onrender.com`; it is `NEXT_PUBLIC_API_URL` for Vercel.
+4. Keep it awake: free services sleep after 15 minutes without traffic, and the first request then takes about a minute. Point a free uptime monitor (e.g. UptimeRobot, every 5 minutes) at `https://<api>/health`.
+
+Limits to know: 512 MB RAM and a small CPU (fine for a few rooms at once); exactly one instance (the worker must run once); free Key Value is memory-only, so a restart can drop a pending round timer (the round then ends when every player finishes).
+
+## 3b. Paid: API, worker and Redis on one container host
 
 Render, Railway or Fly.io all fit. Build from `api/Dockerfile` (CI builds it on every push).
 

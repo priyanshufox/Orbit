@@ -12,7 +12,7 @@ from arq.connections import RedisSettings
 
 from orbit import pipeline
 from orbit.core import events
-from orbit.core.config import get_settings
+from orbit.core.config import Settings, get_settings
 from orbit.core.db import create_engine, create_sessionmaker
 from orbit.core.jobs import ArqJobQueue
 from orbit.core.logging import configure_logging
@@ -64,7 +64,8 @@ async def curate_content(ctx: dict[str, Any]) -> dict[str, int]:
 
 
 async def on_startup(ctx: dict[str, Any]) -> None:
-    settings = get_settings()
+    # The API passes its own settings when it runs the worker in-process.
+    settings: Settings = ctx.get("settings") or get_settings()
     configure_logging(settings.log_level, json=settings.is_production)
     init_sentry(settings, component="worker")
     ctx["settings"] = settings

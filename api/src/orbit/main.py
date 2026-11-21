@@ -3,12 +3,16 @@
 Run locally:  uv run uvicorn orbit.main:app --reload
 """
 
+import asyncio
+import contextlib
 import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import structlog
+from arq.connections import RedisSettings
+from arq.worker import Worker, create_worker
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -31,6 +35,29 @@ from orbit.modules.rooms.router import router as rooms_router
 from orbit.modules.rooms.ws import router as ws_router
 
 log = structlog.get_logger("orbit.api")
+
+
+async def _start_worker(settings: Settings) -> tuple[Worker, asyncio.Task[None]]:
+    """The arq worker as a background task of this process (RUN_WORKER_IN_PROCESS)."""
+    from orbit.worker import WorkerSettings
+
+    worker = create_worker(
+        WorkerSettings,
+        handle_signals=False,
+        redis_settings=RedisSettings.from_dsn(settings.redis_url),
+        ctx={"settings": settings},
+    )
+    task = asyncio.create_task(worker.async_run(), name="arq-worker")
+    return worker, task
+
+
+async def _stop_worker(worker: Worker, task: asyncio.Task[None]) -> None:
+    # close() cancels running jobs (arq retries them later), then runs the worker's on_shutdown.
+    with contextlib.suppress(asyncio.CancelledError):
+        await worker.close()
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
 
 
 def create_app(
@@ -63,10 +90,13 @@ def create_app(
             await ensure_schema(app.state.neo4j)
         except Exception:  # Neo4j down at boot: the graph rebuilds from Postgres later
             log.exception("api.neo4j_schema_failed")
-        log.info("api.startup", env=settings.app_env)
+        worker = await _start_worker(settings) if settings.run_worker_in_process else None
+        log.info("api.startup", env=settings.app_env, worker_in_process=worker is not None)
         try:
             yield
         finally:
+            if worker is not None:
+                await _stop_worker(*worker)
             await fanout.stop()
             await app.state.neo4j.close()
             if own_jobs is not None:

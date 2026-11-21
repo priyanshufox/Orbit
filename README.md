@@ -83,7 +83,7 @@ cd api && uv run arq orbit.worker.WorkerSettings
 
 New migration after changing a `models.py`: `uv run alembic revision --autogenerate -m "what changed"`, then review the file.
 
-The worker runs the round timer, scoring and reveal, the hourly room expiry, and the daily content curator; rounds don't finish without it.
+The worker runs the round timer, scoring and reveal, the hourly room expiry, and the daily content curator; rounds don't finish without it. Alternatively set `RUN_WORKER_IN_PROCESS=true` and the API runs the worker itself (used on Render's free plan).
 
 Content: `uv run python -m orbit.seed --banks` loads the question bank (`api/src/orbit/modules/game/data/questions.json`) and facts bank (`api/src/orbit/modules/content/data/facts.json`). Live memes and headlines need `ANTHROPIC_API_KEY` plus the Imgflip or NewsData keys. To draft more facts for review: `uv run python -m orbit.modules.content.draft_facts`.
 

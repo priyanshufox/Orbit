@@ -65,6 +65,10 @@ class Settings(BaseSettings):
 
     log_level: str = "INFO"
 
+    # Run the arq worker inside the API process (one service instead of two). For free hosts
+    # that offer no background workers, e.g. Render's free plan. Run one API instance then.
+    run_worker_in_process: bool = False
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"

@@ -16,19 +16,32 @@ from orbit.core import health
 from orbit.core.auth import TokenVerifier
 from orbit.core.config import Settings, get_settings
 from orbit.core.db import create_engine, create_sessionmaker
+from orbit.core.jobs import JobQueue, LazyArqJobQueue
 from orbit.core.logging import configure_logging
+from orbit.core.observability import init_sentry
 from orbit.core.openapi import install_openapi
+from orbit.core.realtime import ConnectionManager, RedisFanout
 from orbit.core.redis import create_redis
 from orbit.modules.accounts.router import router as accounts_router
+from orbit.modules.game.router import router as game_router
+from orbit.modules.graph.driver import create_driver, ensure_schema
+from orbit.modules.graph.router import router as graph_router
+from orbit.modules.privacy.router import router as privacy_router
+from orbit.modules.rooms.router import router as rooms_router
+from orbit.modules.rooms.ws import router as ws_router
 
 log = structlog.get_logger("orbit.api")
 
 
 def create_app(
-    settings: Settings | None = None, *, token_verifier: TokenVerifier | None = None
+    settings: Settings | None = None,
+    *,
+    token_verifier: TokenVerifier | None = None,
+    jobs: JobQueue | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.log_level, json=settings.is_production)
+    init_sentry(settings, component="api")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -37,10 +50,27 @@ def create_app(
         engine = create_engine(settings.database_url)
         app.state.sessionmaker = create_sessionmaker(engine)
         app.state.redis = create_redis(settings.redis_url)
+        own_jobs = LazyArqJobQueue(settings.redis_url) if jobs is None else None
+        app.state.jobs = jobs or own_jobs
+        # Realtime: this process's sockets + one Redis subscription delivering room events.
+        app.state.connections = ConnectionManager()
+        fanout = RedisFanout(app.state.redis, app.state.connections)
+        fanout.start()
+        app.state.neo4j = create_driver(
+            settings.neo4j_uri, settings.neo4j_user, settings.neo4j_password.get_secret_value()
+        )
+        try:
+            await ensure_schema(app.state.neo4j)
+        except Exception:  # Neo4j down at boot: the graph rebuilds from Postgres later
+            log.exception("api.neo4j_schema_failed")
         log.info("api.startup", env=settings.app_env)
         try:
             yield
         finally:
+            await fanout.stop()
+            await app.state.neo4j.close()
+            if own_jobs is not None:
+                await own_jobs.close()
             await app.state.redis.aclose()
             await engine.dispose()
             log.info("api.shutdown")
@@ -90,6 +120,11 @@ def create_app(
 
     app.include_router(health.router)
     app.include_router(accounts_router)
+    app.include_router(rooms_router)
+    app.include_router(game_router)
+    app.include_router(graph_router)
+    app.include_router(privacy_router)
+    app.include_router(ws_router)
     install_openapi(app)
     return app
 

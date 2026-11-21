@@ -1,17 +1,8 @@
 /**
  * Magic-link delivery. Uses Resend's HTTP API when RESEND_API_KEY is set; otherwise, outside
- * production only, prints the link to the server console and remembers it for the dev login.
+ * production only, prints the link to the web server's console (local runs without an email
+ * provider).
  */
-
-const devLinks = ((globalThis as { __orbitDevLinks?: Map<string, string> }).__orbitDevLinks ??=
-  new Map<string, string>());
-
-/** The most recent magic link sent to `email` in development. */
-export function takeDevMagicLink(email: string): string | undefined {
-  const url = devLinks.get(email);
-  devLinks.delete(email);
-  return url;
-}
 
 export async function sendMagicLinkEmail(email: string, url: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -19,7 +10,6 @@ export async function sendMagicLinkEmail(email: string, url: string): Promise<vo
     if (process.env.NODE_ENV === "production") {
       throw new Error("RESEND_API_KEY is not set; cannot send sign-in email.");
     }
-    devLinks.set(email, url);
     console.info(`[dev] Magic link for ${email}: ${url}`);
     return;
   }

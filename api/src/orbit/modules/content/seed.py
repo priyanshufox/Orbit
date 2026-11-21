@@ -1,32 +1,40 @@
-"""Dev seed: 40 placeholder fact cards spread over the fixed tag list.
+"""Load the facts bank (task 4.2) from data/facts.json. Safe in production; idempotent.
 
-They are clearly labelled placeholders (source "dev-seed"), not real facts; the facts bank
-arrives in task 4.2.
+The bank is LLM-drafted; review it by hand before launch (design: Content pipeline).
 """
 
-from uuid import NAMESPACE_URL, uuid5
+import json
+from pathlib import Path
+from typing import Any
+from uuid import NAMESPACE_URL, UUID, uuid5
 
+from sqlalchemy import update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbit.modules.content.models import Content
 from orbit.modules.content.tags import TAGS
 
-DEV_FACT_COUNT = 40
+BANK = Path(__file__).parent / "data" / "facts.json"
 
 
-def dev_facts() -> list[dict]:
+def fact_id(text: str) -> UUID:
+    return uuid5(NAMESPACE_URL, f"orbit-fact:{text}")
+
+
+def load_bank(path: Path = BANK) -> list[dict[str, Any]]:
     rows = []
-    for i in range(DEV_FACT_COUNT):
-        primary = TAGS[i % len(TAGS)]
-        # Every third card gets a second tag so multi-tag decks get exercised.
-        tags = [primary] if i % 3 else [primary, TAGS[(i + 4) % len(TAGS)]]
+    for fact in json.loads(path.read_text()):
+        tags = fact["tags"]
+        if not 1 <= len(tags) <= 3 or not set(tags) <= set(TAGS):
+            raise ValueError(f"bad tags {tags} on {fact['text']!r}")
         rows.append(
             {
-                "id": uuid5(NAMESPACE_URL, f"orbit-dev-fact:{i}"),
+                "id": fact_id(fact["text"]),
                 "type": "fact",
-                "source": "dev-seed",
-                "payload": {"text": f"Dev fact {i + 1}: placeholder card about {primary}."},
+                "source": "facts-bank",
+                "source_url": fact.get("source_url"),
+                "payload": {"text": fact["text"]},
                 "tags": tags,
                 "active": True,
             }
@@ -35,5 +43,12 @@ def dev_facts() -> list[dict]:
 
 
 async def seed(session: AsyncSession) -> int:
-    res = await session.execute(insert(Content).values(dev_facts()).on_conflict_do_nothing())
-    return res.rowcount
+    rows = load_bank()
+    stmt = insert(Content).values(rows)
+    stmt = stmt.on_conflict_do_update(
+        index_elements=["id"], set_={"tags": stmt.excluded.tags, "payload": stmt.excluded.payload}
+    )
+    await session.execute(stmt)
+    # Placeholder cards from earlier dev seeds are retired in favour of the real bank.
+    await session.execute(update(Content).where(Content.source == "dev-seed").values(active=False))
+    return len(rows)

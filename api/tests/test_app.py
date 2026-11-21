@@ -58,3 +58,19 @@ def test_docs_hidden_in_production() -> None:
         assert client.get("/docs").status_code == 404
     with make_client(app_env="development") as client:
         assert client.get("/docs").status_code == 200
+
+
+def test_metrics_need_the_token(test_settings: Settings, migrated_db: str) -> None:
+    from pydantic import SecretStr
+
+    on = test_settings.model_copy(update={"metrics_token": SecretStr("s3cret")})
+    with TestClient(create_app(on)) as client:
+        assert client.get("/health/metrics").status_code == 404
+        assert client.get("/health/metrics", headers={"x-metrics-token": "nope"}).status_code == 404
+        res = client.get("/health/metrics", headers={"x-metrics-token": "s3cret"})
+    assert res.status_code == 200
+    assert set(res.json()) == {"rooms_by_state", "members_in_open_rooms", "sockets_on_this_process"}
+    with TestClient(create_app(test_settings)) as client:  # no token configured: endpoint off
+        assert (
+            client.get("/health/metrics", headers={"x-metrics-token": "s3cret"}).status_code == 404
+        )

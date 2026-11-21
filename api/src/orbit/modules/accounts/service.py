@@ -1,5 +1,6 @@
 """Accounts: profile creation behind the age gate, consent, and roots."""
 
+from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from uuid import UUID
 
@@ -8,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from orbit.core.auth import Identity
 from orbit.modules.accounts.models import User, UserRoot, auth_user
+from orbit.modules.accounts.roots import normalise_city, normalise_school
 from orbit.modules.accounts.schemas import Me, Roots, School
 
 ADULT_AGE = 18
@@ -37,6 +39,7 @@ def to_me(identity: Identity, profile: User | None) -> Me:
         email=profile.email if profile else identity.email,
         name=profile.name if profile else display_name(identity),
         avatar_url=profile.avatar_url if profile else identity.picture,
+        hobbies=list(profile.hobbies) if profile else [],
         onboarded=profile is not None,
         consented=bool(profile and profile.consented_at),
     )
@@ -46,8 +49,14 @@ async def get_profile(session: AsyncSession, user_id: UUID) -> User | None:
     return await session.get(User, user_id)
 
 
-async def pass_age_gate(
-    session: AsyncSession, identity: Identity, date_of_birth: date, *, today: date | None = None
+async def sign_up(
+    session: AsyncSession,
+    identity: Identity,
+    date_of_birth: date,
+    *,
+    name: str | None = None,
+    hobbies: list[str] | None = None,
+    today: date | None = None,
 ) -> User:
     """Create the Orbit profile for an adult. For a minor, delete the sign-in identity instead
     (sessions and linked accounts cascade) and store nothing, per the DPDP-driven 18+ policy."""
@@ -66,7 +75,8 @@ async def pass_age_gate(
     profile = User(
         id=identity.user_id,
         email=identity.email,
-        name=display_name(identity)[:80],
+        name=(name or display_name(identity))[:80],
+        hobbies=list(hobbies or []),
         avatar_url=identity.picture,
         birth_year=date_of_birth.year,
         is_adult=True,
@@ -74,6 +84,24 @@ async def pass_age_gate(
     session.add(profile)
     await session.commit()
     return profile
+
+
+async def update_profile(
+    session: AsyncSession, profile: User, *, name: str | None, hobbies: list[str] | None
+) -> User:
+    if name is not None:
+        profile.name = name
+    if hobbies is not None:
+        profile.hobbies = list(hobbies)
+    await session.commit()
+    return profile
+
+
+async def hobbies_for(session: AsyncSession, user_ids: list[UUID]) -> dict[UUID, frozenset[str]]:
+    return {
+        u.id: frozenset(u.hobbies or [])
+        for u in (await public_profiles(session, user_ids)).values()
+    }
 
 
 async def give_consent(session: AsyncSession, profile: User) -> User:
@@ -122,3 +150,43 @@ async def replace_roots(session: AsyncSession, user_id: UUID, roots: Roots) -> R
     session.add_all(rows)
     await session.commit()
     return await get_roots(session, user_id)
+
+
+async def public_profiles(session: AsyncSession, user_ids: list[UUID]) -> dict[UUID, User]:
+    """Name and avatar for other modules' views. Never exposes roots or birth year."""
+    if not user_ids:
+        return {}
+    rows = (await session.scalars(select(User).where(User.id.in_(user_ids)))).all()
+    return {u.id: u for u in rows}
+
+
+@dataclass(frozen=True)
+class NormalisedRoots:
+    """Roots in matching form, for scoring. Never shown to anyone."""
+
+    birth_city: str | None
+    school: tuple[str, str] | None
+    childhood: frozenset[str]
+
+
+async def normalised_roots(
+    session: AsyncSession, user_ids: list[UUID]
+) -> dict[UUID, NormalisedRoots]:
+    out: dict[UUID, NormalisedRoots] = {}
+    for user_id in user_ids:
+        r = await get_roots(session, user_id)
+        out[user_id] = NormalisedRoots(
+            birth_city=normalise_city(r.birth_city) if r.birth_city else None,
+            school=(normalise_school(r.school.name), normalise_city(r.school.city))
+            if r.school
+            else None,
+            childhood=frozenset(normalise_city(c) for c in r.childhood_cities),
+        )
+    return out
+
+
+async def delete_identity(session: AsyncSession, user_id: UUID) -> None:
+    """Delete the sign-in identity; the profile, roots, snapshots, sessions and every room
+    membership (with its answers, reactions, follows and scores) cascade."""
+    await session.execute(delete(auth_user).where(auth_user.c.id == user_id))
+    await session.commit()

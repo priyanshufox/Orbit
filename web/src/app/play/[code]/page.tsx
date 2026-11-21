@@ -1,18 +1,21 @@
 import { Suspense } from "react";
-import { Placeholder } from "@/components/placeholder";
 
-/** Phone: join → deck → my results. */
-export default function PlayPage(props: PageProps<"/play/[code]">) {
+import { Loading } from "@/components/ui";
+import { requireStage } from "@/lib/onboarding";
+
+import { PlayClient } from "./play-client";
+
+export default function Page(props: PageProps<"/play/[code]">) {
   return (
-    <Suspense fallback={<Placeholder title="Play" tasks="3.7, 4.5, 7.3" />}>
-      <PlayRoom params={props.params} />
+    <Suspense fallback={<Loading />}>
+      <Room params={props.params} />
     </Suspense>
   );
 }
 
-async function PlayRoom({ params }: { params: PageProps<"/play/[code]">["params"] }) {
-  const { code } = await params;
-  return (
-    <Placeholder title="Play" detail={`Room ${code}: join, deck, results`} tasks="3.7, 4.5, 7.3" />
-  );
+async function Room({ params }: { params: PageProps<"/play/[code]">["params"] }) {
+  const code = (await params).code.toUpperCase();
+  // Not signed in or mid-onboarding: go through sign-in/age/consent, then come back here.
+  const { me } = await requireStage("ready", `/play/${code}`);
+  return <PlayClient code={code} me={{ id: me.id, name: me.name }} />;
 }

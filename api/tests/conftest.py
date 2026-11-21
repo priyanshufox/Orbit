@@ -25,8 +25,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from orbit.core.auth import TokenVerifier
 from orbit.core.config import Settings
 from orbit.core.db import get_session
+from orbit.core.jobs import RecordingJobQueue
+from orbit.core.realtime import ConnectionManager
 from orbit.main import create_app
-from orbit.modules.accounts.models import auth_user
+from orbit.modules.accounts.models import User, auth_user
+from orbit.modules.graph.driver import GraphDriver, create_driver, ensure_schema
 
 API_DIR = Path(__file__).resolve().parents[1]
 
@@ -102,6 +105,7 @@ async def db(engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
 @pytest.fixture
 async def redis(test_settings: Settings) -> AsyncIterator[Redis]:
     client = Redis.from_url(test_settings.redis_url, decode_responses=True)
+    await client.flushdb()  # rate-limit counters and kick lists from earlier tests
     yield client
     await client.aclose()
 
@@ -172,19 +176,80 @@ async def make_identity(db: AsyncSession, email: str, name: str = "") -> UUID:
     return user_id
 
 
+@pytest.fixture(scope="session")
+async def neo4j(test_settings: Settings) -> AsyncIterator[GraphDriver]:
+    driver = create_driver(
+        test_settings.neo4j_uri,
+        test_settings.neo4j_user,
+        test_settings.neo4j_password.get_secret_value(),
+    )
+    await ensure_schema(driver)
+    yield driver
+    await driver.close()
+
+
 @pytest.fixture
-def app(test_settings: Settings, token_verifier: TokenVerifier, db: AsyncSession) -> FastAPI:
-    """The API wired to the rolled-back test session and the test signing key."""
-    application = create_app(test_settings, token_verifier=token_verifier)
+def jobs() -> RecordingJobQueue:
+    return RecordingJobQueue()
+
+
+@pytest.fixture
+def app(
+    test_settings: Settings,
+    token_verifier: TokenVerifier,
+    db: AsyncSession,
+    redis: Redis,
+    neo4j: GraphDriver,
+    jobs: RecordingJobQueue,
+) -> FastAPI:
+    """The API wired to the rolled-back test session, test Redis/Neo4j, a recording job queue
+    and the test signing key. (Lifespan doesn't run under ASGITransport, so state is set here.)"""
+    application = create_app(test_settings, token_verifier=token_verifier, jobs=jobs)
 
     async def _session() -> AsyncIterator[AsyncSession]:
         yield db
 
     application.dependency_overrides[get_session] = _session
+    application.state.redis = redis
+    application.state.jobs = jobs
+    application.state.neo4j = neo4j
+    application.state.connections = ConnectionManager()
     return application
+
+
+async def make_player(
+    db: AsyncSession, make_token: TokenFactory, name: str
+) -> tuple[UUID, dict[str, str]]:
+    """An adult who passed the age gate and consented, plus auth headers for them."""
+    email = f"{name.lower()}-{uuid4().hex[:8]}@orbit.test"
+    user_id = await make_identity(db, email, name)
+    from datetime import UTC, datetime
+
+    db.add(
+        User(
+            id=user_id,
+            email=email,
+            name=name,
+            birth_year=1999,
+            is_adult=True,
+            consented_at=datetime.now(UTC),
+        )
+    )
+    await db.flush()
+    return user_id, {"Authorization": f"Bearer {make_token(user_id, email, name=name)}"}
 
 
 @pytest.fixture
 async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://api.test") as c:
         yield c
+
+
+@pytest.fixture
+async def banks(db: AsyncSession) -> None:
+    """The real question and facts banks, inside the test's rolled-back transaction."""
+    from orbit.modules.content import seed as content_seed
+    from orbit.modules.game import seed as game_seed
+
+    await game_seed.seed(db)
+    await content_seed.seed(db)

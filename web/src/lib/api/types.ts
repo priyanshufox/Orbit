@@ -58,31 +58,19 @@ export interface paths {
         get: operations["get_me_me_get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/me/age": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
         /**
-         * Pass Age Gate
-         * @description Age gate (task 2.6). Adults get an Orbit profile; for under-18s the sign-in identity is
-         *     deleted and nothing is stored.
+         * Delete Me
+         * @description Delete my account (task 8.5): identity, profile, roots, snapshots, and my data in every
+         *     room, in Postgres and Neo4j. Runs immediately; the design allows up to 24 h.
          */
-        post: operations["pass_age_gate_me_age_post"];
-        delete?: never;
+        delete: operations["delete_me_me_delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Me
+         * @description Change display name or hobbies.
+         */
+        patch: operations["update_me_me_patch"];
         trace?: never;
     };
     "/me/consent": {
@@ -99,6 +87,27 @@ export interface paths {
          * @description Record agreement to the data notice (task 2.7). Idempotent.
          */
         post: operations["give_consent_me_consent_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign Up
+         * @description Sign-up: name, date of birth (18+ check, task 2.6) and hobbies. Adults get an Orbit
+         *     profile; for under-18s the sign-in identity is deleted and nothing is stored.
+         */
+        post: operations["sign_up_me_profile_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -126,17 +135,335 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Snapshots
+         * @description My saved graphs from rooms that have expired (task 8.4), newest first.
+         */
+        get: operations["list_snapshots_me_snapshots_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Room
+         * @description Create a room; you are its host (task 3.1). The host joins as a player separately.
+         */
+        post: operations["create_room_rooms_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Room */
+        get: operations["get_room_rooms__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/answers/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Put Answer
+         * @description Idempotent: sending the same answer twice, or changing it, is fine (task 4.6).
+         */
+        put: operations["put_answer_rooms__code__answers__question_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/deck": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Deck
+         * @description The room's cards, the same for every member, plus what I already answered (task 4.3).
+         */
+        get: operations["get_deck_rooms__code__deck_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish
+         * @description I'm done with my deck (task 4.8). The last finisher ends the round early (4.9).
+         */
+        post: operations["finish_rooms__code__finish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Graph
+         * @description The reveal (task 6.6): the same view for every member and the host screen. Every edge
+         *     carries its score and reasons (reveal is public to the room).
+         */
+        get: operations["get_graph_rooms__code__graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Join Room
+         * @description Join (task 3.3). Idempotent for existing members. Late joiners can join mid-round.
+         */
+        post: operations["join_room_rooms__code__join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/kick": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kick Member
+         * @description Host removes a player (and their data); they cannot rejoin this room.
+         */
+        post: operations["kick_member_rooms__code__kick_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Leave Room
+         * @description Leave and delete my data (task 3.8): answers, reactions, follows and scores go with it.
+         */
+        post: operations["leave_room_rooms__code__leave_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/reactions/{content_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Reaction */
+        put: operations["put_reaction_rooms__code__reactions__content_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/social": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add Social
+         * @description Follow or like another player's profile (task 4.7). After the reveal, new follows are
+         *     pushed so the graph can animate them (7.4); they don't change scores.
+         */
+        post: operations["add_social_rooms__code__social_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/rooms/{code}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Round
+         * @description Start the 5-minute round (task 4.4): freeze the deck, tell everyone, schedule the end.
+         */
+        post: operations["start_round_rooms__code__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AgeGate */
-        AgeGate: {
+        /** AnswerIn */
+        AnswerIn: {
+            /** Value */
+            value: {
+                [key: string]: unknown;
+            };
+        };
+        /** ContentCard */
+        ContentCard: {
             /**
-             * Date Of Birth
-             * Format: date
+             * Content Type
+             * @enum {string}
              */
-            date_of_birth: string;
+            content_type: "fact" | "meme" | "news";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "content";
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Source Url */
+            source_url: string | null;
+        };
+        /** DeckView */
+        DeckView: {
+            /** Answers */
+            answers: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Cards */
+            cards: (components["schemas"]["QuestionCard"] | components["schemas"]["ContentCard"])[];
+            /** Ends At */
+            ends_at: string | null;
+            /** Reactions */
+            reactions: {
+                [key: string]: "like" | "laugh" | "skip" | "send";
+            };
+        };
+        /** EdgeReason */
+        EdgeReason: {
+            /** Signal */
+            signal: string;
+            /** Text */
+            text: string;
+            /** Weight */
+            weight: number;
+        };
+        /** Follow */
+        Follow: {
+            /**
+             * From User
+             * Format: uuid
+             */
+            from_user: string;
+            /**
+             * To User
+             * Format: uuid
+             */
+            to_user: string;
         };
         /** GameStarted */
         GameStarted: {
@@ -150,6 +477,74 @@ export interface components {
              * @enum {string}
              */
             type: "game_started";
+        };
+        /** GraphEdge */
+        GraphEdge: {
+            /**
+             * A
+             * Format: uuid
+             */
+            a: string;
+            /** Answers */
+            answers: number | null;
+            /**
+             * B
+             * Format: uuid
+             */
+            b: string;
+            /** Reactions */
+            reactions: number | null;
+            /** Reasons */
+            reasons: components["schemas"]["EdgeReason"][];
+            /** Roots */
+            roots: number | null;
+            /** Social */
+            social: number | null;
+            /** Total */
+            total: number;
+        };
+        /** GraphNode */
+        GraphNode: {
+            /** Avatar Url */
+            avatar_url: string | null;
+            /** Community */
+            community: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * X
+             * @default 0
+             */
+            x: number;
+            /**
+             * Y
+             * @default 0
+             */
+            y: number;
+            /**
+             * Z
+             * @default 0
+             */
+            z: number;
+        };
+        /**
+         * GraphView
+         * @description The reveal (design: everything public): every drawn edge carries its score and reasons.
+         */
+        GraphView: {
+            /** Edges */
+            edges: components["schemas"]["GraphEdge"][];
+            /** Follows */
+            follows: components["schemas"]["Follow"][];
+            /** Nodes */
+            nodes: components["schemas"]["GraphNode"][];
+            /** Room Code */
+            room_code: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -166,6 +561,14 @@ export interface components {
              */
             status: "ok";
         };
+        /** Kick */
+        Kick: {
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
         /** Me */
         Me: {
             /** Avatar Url */
@@ -174,6 +577,8 @@ export interface components {
             consented: boolean;
             /** Email */
             email: string;
+            /** Hobbies */
+            hobbies: ("Cricket" | "Football" | "Fitness" | "Gaming" | "Music" | "Dancing" | "Movies" | "Anime" | "Reading" | "Writing" | "Cooking" | "Food" | "Travel" | "Photography" | "Art" | "Tech" | "Fashion" | "Trekking")[];
             /**
              * Id
              * Format: uuid
@@ -183,6 +588,20 @@ export interface components {
             name: string;
             /** Onboarded */
             onboarded: boolean;
+        };
+        /** Member */
+        Member: {
+            /** Avatar Url */
+            avatar_url: string | null;
+            /** Finished */
+            finished: boolean;
+            /** Name */
+            name: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
         };
         /** MemberJoined */
         MemberJoined: {
@@ -204,6 +623,34 @@ export interface components {
              */
             user_id: string;
         };
+        /**
+         * MemberLeft
+         * @description A member left ("Leave and delete my data") or was kicked; their sockets are closed.
+         */
+        MemberLeft: {
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "left" | "kicked";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "member_left";
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** ProfileUpdate */
+        ProfileUpdate: {
+            /** Hobbies */
+            hobbies?: ("Cricket" | "Football" | "Fitness" | "Gaming" | "Music" | "Dancing" | "Movies" | "Anime" | "Reading" | "Writing" | "Cooking" | "Food" | "Travel" | "Photography" | "Art" | "Tech" | "Fashion" | "Trekking")[] | null;
+            /** Name */
+            name?: string | null;
+        };
         /** Progress */
         Progress: {
             /** Finished */
@@ -215,6 +662,38 @@ export interface components {
              * @enum {string}
              */
             type: "progress";
+        };
+        /** QuestionCard */
+        QuestionCard: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "question";
+            /** Options */
+            options: {
+                [key: string]: unknown;
+            };
+            /** Prompt */
+            prompt: string;
+            /**
+             * Question Kind
+             * @enum {string}
+             */
+            question_kind: "single" | "multi" | "slider";
+        };
+        /** ReactionIn */
+        ReactionIn: {
+            /**
+             * Reaction
+             * @enum {string}
+             */
+            reaction: "like" | "laugh" | "skip" | "send";
         };
         /** Readiness */
         Readiness: {
@@ -251,7 +730,37 @@ export interface components {
              */
             type: "room_closing";
         };
-        RoomEvent: components["schemas"]["MemberJoined"] | components["schemas"]["GameStarted"] | components["schemas"]["Progress"] | components["schemas"]["Scoring"] | components["schemas"]["Reveal"] | components["schemas"]["SocialAdded"] | components["schemas"]["RoomClosing"];
+        RoomEvent: components["schemas"]["MemberJoined"] | components["schemas"]["MemberLeft"] | components["schemas"]["GameStarted"] | components["schemas"]["Progress"] | components["schemas"]["Scoring"] | components["schemas"]["Reveal"] | components["schemas"]["SocialAdded"] | components["schemas"]["RoomClosing"];
+        /**
+         * RoomState
+         * @enum {string}
+         */
+        RoomState: "CREATED" | "LOBBY" | "PLAYING" | "SCORING" | "REVEALED" | "EXPIRED";
+        /** RoomView */
+        RoomView: {
+            /** Code */
+            code: string;
+            /** Ends At */
+            ends_at: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Host Id */
+            host_id: string | null;
+            /** Is Host */
+            is_host: boolean;
+            /** Is Member */
+            is_member: boolean;
+            /** Member Cap */
+            member_cap: number;
+            /** Members */
+            members: components["schemas"]["Member"][];
+            /** Started At */
+            started_at: string | null;
+            state: components["schemas"]["RoomState"];
+        };
         /**
          * Roots
          * @description All optional. PUT replaces everything; send empty values to clear.
@@ -278,6 +787,41 @@ export interface components {
              */
             type: "scoring";
         };
+        /**
+         * SignUp
+         * @description Sign-up (task 2.6 + profile). Only the birth year is stored; the full date gives an
+         *     exact 18+ check.
+         */
+        SignUp: {
+            /**
+             * Date Of Birth
+             * Format: date
+             */
+            date_of_birth: string;
+            /** Hobbies */
+            hobbies?: ("Cricket" | "Football" | "Fitness" | "Gaming" | "Music" | "Dancing" | "Movies" | "Anime" | "Reading" | "Writing" | "Cooking" | "Food" | "Travel" | "Photography" | "Art" | "Tech" | "Fashion" | "Trekking")[];
+            /** Name */
+            name: string;
+        };
+        /** Snapshot */
+        Snapshot: {
+            /** Graph */
+            graph: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Room Code */
+            room_code: string;
+            /**
+             * Taken At
+             * Format: date-time
+             */
+            taken_at: string;
+        };
         /** SocialAdded */
         SocialAdded: {
             /**
@@ -300,6 +844,27 @@ export interface components {
              * @enum {string}
              */
             type: "social_added";
+        };
+        /** SocialIn */
+        SocialIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "follow" | "like_profile";
+            /**
+             * To User
+             * Format: uuid
+             */
+            to_user: string;
+        };
+        /** Started */
+        Started: {
+            /**
+             * Ends At
+             * Format: date-time
+             */
+            ends_at: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -383,7 +948,27 @@ export interface operations {
             };
         };
     };
-    pass_age_gate_me_age_post: {
+    delete_me_me_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    update_me_me_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -392,7 +977,60 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["AgeGate"];
+                "application/json": components["schemas"]["ProfileUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    give_consent_me_consent_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    sign_up_me_profile_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignUp"];
             };
         };
         responses: {
@@ -418,26 +1056,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
-            };
-        };
-    };
-    give_consent_me_consent_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Me"];
-                };
             };
         };
     };
@@ -482,6 +1100,442 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Roots"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_snapshots_me_snapshots_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Snapshot"][];
+                };
+            };
+        };
+    };
+    create_room_rooms_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomView"];
+                };
+            };
+        };
+    };
+    get_room_rooms__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_answer_rooms__code__answers__question_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: string;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_deck_rooms__code__deck_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeckView"];
+                };
+            };
+            /** @description round_not_started */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    finish_rooms__code__finish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_graph_rooms__code__graph_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphView"];
+                };
+            };
+            /** @description not_in_room */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description not_revealed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_room_rooms__code__join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoomView"];
+                };
+            };
+            /** @description kicked from this room */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description room_full or round_over */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description rate_limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kick_member_rooms__code__kick_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Kick"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    leave_room_rooms__code__leave_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_reaction_rooms__code__reactions__content_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                content_id: string;
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReactionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_social_rooms__code__social_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SocialIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_round_rooms__code__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Started"];
+                };
+            };
+            /** @description not_ready */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -115,8 +115,10 @@ async def test_deleting_user_removes_roots_and_snapshots(db: AsyncSession) -> No
 
     assert await count(db, UserRoot, user_id=a.id) == 0
     assert await count(db, GraphSnapshot, user_id=a.id) == 0
-    # a hosted the room, so the room goes too.
-    assert await count(db, Room, code=room.code) == 0
+    # a hosted the room: it stays for the others, now without a host.
+    remaining = await db.get(Room, room.code, populate_existing=True)
+    assert remaining is not None
+    assert remaining.host_id is None
 
 
 async def test_deleting_sign_in_identity_removes_profile(db: AsyncSession) -> None:

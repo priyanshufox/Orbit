@@ -1,26 +1,210 @@
 @import "tailwindcss";
 
+/* Tailwind `dark:` follows the app's toggle, not only the OS. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/*
+ * Orbit design tokens, in three layers:
+ *   1. brand palette (raw colours)       -> Tailwind colours, e.g. bg-tomato-700
+ *   2. semantic roles (what code uses)   -> CSS variables below, light + dark
+ *   3. components                        -> components/ui.tsx and the utilities at the end
+ * Rule of thumb per screen: ~70% cream/neutral, ~20% one brand colour, ~10% mustard.
+ * Never red and green at full strength on one screen; never colour alone for meaning.
+ */
+
+@theme static {
+  /* 1. Brand palette */
+  --color-tomato-500: #e8483a;
+  --color-tomato-700: #c2352a; /* text-safe: cream on it = 4.6:1 */
+  --color-grid-green-500: #3e8a4f;
+  --color-grid-green-700: #2f6b3d; /* text-safe: cream on it = 5.36:1 */
+  --color-maroon-900: #6e1e1e;
+  --color-mustard-400: #f2d24b; /* ink on it = 12.7:1 */
+  --color-cream-100: #f3ebd3;
+  --color-sky-400: #5bb8e8;
+  --color-gold-500: #d9a93b;
+  --color-ink-900: #111111;
+  --color-night-900: #16241a; /* dark-mode base, a near-black green */
+
+  /* Typography: display for short shouts only, never body copy */
+  --font-display: var(--font-bangers), "Impact", sans-serif;
+  --font-heading: var(--font-montserrat), "Arial Black", sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-accent: var(--font-fraunces), Georgia, serif;
+
+  /* Shape */
+  --radius-card: 10px;
+  --radius-control: 8px;
+
+  /* Motion */
+  --ease-pop: cubic-bezier(0.34, 1.56, 0.64, 1); /* ~ spring stiffness 400, damping 15 */
+  --animate-pop: pop 240ms var(--ease-pop) both;
+  --animate-sparkle: sparkle 800ms ease-in-out infinite alternate;
+  --animate-draw: draw 300ms ease-out forwards;
+
+  @keyframes pop {
+    0% {
+      transform: scale(0.85);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.05);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  @keyframes sparkle {
+    from {
+      transform: scale(0.6) rotate(0deg);
+      opacity: 0.6;
+    }
+    to {
+      transform: scale(1) rotate(20deg);
+      opacity: 1;
+    }
+  }
+  @keyframes draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+}
+
+/* 2. Semantic roles */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: var(--color-cream-100); /* bg.default */
+  --foreground: var(--color-ink-900); /* text.primary */
+  --surface: #ffffff; /* surface.card */
+  --ink: var(--color-ink-900); /* border.ink */
+  --brand: var(--color-grid-green-700); /* bg.brand */
+  --hero: var(--color-tomato-500); /* bg.hero (illustration only, never behind body text) */
+  --on-brand: var(--color-cream-100); /* text.onBrand */
+  --action: var(--color-tomato-700); /* action.primary */
+  --action-2: var(--color-grid-green-700); /* action.secondary */
+  --highlight: var(--color-mustard-400);
+  --success: var(--color-grid-green-500);
+  --warning: var(--color-mustard-400);
+  --danger: var(--color-tomato-700);
+  --action-text: var(--color-tomato-700); /* red text/links: 4.6:1 on cream, 5.5:1 on white */
+  --shadow-ink: var(--color-ink-900);
+  --grain-opacity: 0.05;
+  --grid-line: rgb(17 17 17 / 0.05);
+  --on-highlight: var(--color-ink-900); /* text on mustard, both themes */
+  color-scheme: light;
+}
+
+/* Dark theme. The toggle (components/theme-toggle.tsx) always sets data-theme on <html>, resolving
+ * "system" from the OS, so every page and component reads one source of truth. */
+:root[data-theme="dark"] {
+  --background: var(--color-night-900);
+  --foreground: var(--color-cream-100);
+  --surface: #1e2f22;
+  --ink: #2a2a2a;
+  --brand: #0f1912;
+  --on-brand: var(--color-cream-100);
+  --shadow-ink: rgb(243 235 211 / 0.15); /* cream-tinted hard shadow at 15% */
+  /* tomato-700 text is only 2.95:1 on the dark base; this tint is 5.9:1 */
+  --action-text: #f2796b;
+  --danger: #f2796b;
+  --grid-line: rgb(243 235 211 / 0.05);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-brand: var(--brand);
+  --color-hero: var(--hero);
+  --color-on-brand: var(--on-brand);
+  --color-action: var(--action);
+  --color-action-2: var(--action-2);
+  --color-action-text: var(--action-text);
+  --color-highlight: var(--highlight);
+  --color-on-highlight: var(--on-highlight);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --shadow-hard-sm: 4px 4px 0 var(--shadow-ink);
+  --shadow-hard-xs: 2px 2px 0 var(--shadow-ink);
+  --shadow-hard: 8px 8px 0 var(--shadow-ink);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Texture on every page: a faint 24px grid plus paper grain, in both themes. */
+body {
+  background-color: var(--background);
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--foreground);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* 3. Component utilities */
+
+/* Sticker look: ink border + hard offset shadow, no blur. */
+@utility sticker {
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-card);
+  box-shadow: 8px 8px 0 var(--shadow-ink);
+}
+@utility sticker-sm {
+  border: 2.5px solid var(--ink);
+  border-radius: var(--radius-control);
+  box-shadow: 4px 4px 0 var(--shadow-ink);
+}
+
+/* Press: move +2px down-right and shrink the shadow. */
+@utility press {
+  transition:
+    transform 120ms ease-out,
+    box-shadow 120ms ease-out;
+  &:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--shadow-ink);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* 24px grid on the brand background: onboarding and empty states. */
+@utility bg-grid {
+  background-color: var(--brand);
+  background-image:
+    linear-gradient(to right, rgb(243 235 211 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(243 235 211 / 0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Paper grain at ~5%: brand and hero backgrounds only, never lists or forms. */
+@utility grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
 }

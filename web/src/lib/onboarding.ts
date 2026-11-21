@@ -10,7 +10,7 @@ export type Stage = "signin" | "age" | "consent" | "ready";
 
 export const STAGE_PATH: Record<Stage, string> = {
   signin: "/signin",
-  age: "/age",
+  age: "/signup",
   consent: "/consent",
   ready: "/",
 };
@@ -34,11 +34,27 @@ export async function getVisitor(): Promise<Visitor> {
   return { stage, api, me };
 }
 
-/** Send the visitor to their current step unless it is one of `allowed`. */
+/** A same-site path to come back to after onboarding (e.g. /play/ABC234), or null. */
+export function safeNext(value: unknown): string | null {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : null;
+}
+
+export function withNext(path: string, next: string | null | undefined): string {
+  return next ? `${path}${path.includes("?") ? "&" : "?"}next=${encodeURIComponent(next)}` : path;
+}
+
+/** Send the visitor to their current step unless it is one of `allowed`. `next` is carried
+ * through sign-in and onboarding, and used once the visitor is ready. */
 export async function requireStage<S extends Stage>(
-  ...allowed: S[]
+  allowed: S | S[],
+  next?: string | null,
 ): Promise<Extract<Visitor, { stage: S }>> {
+  const ok = (Array.isArray(allowed) ? allowed : [allowed]) as Stage[];
   const visitor = await getVisitor();
-  if (!(allowed as Stage[]).includes(visitor.stage)) redirect(STAGE_PATH[visitor.stage]);
+  if (!ok.includes(visitor.stage)) {
+    redirect(visitor.stage === "ready" && next ? next : withNext(STAGE_PATH[visitor.stage], next));
+  }
   return visitor as Extract<Visitor, { stage: S }>;
 }

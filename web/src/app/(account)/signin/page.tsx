@@ -1,47 +1,44 @@
 import { Suspense } from "react";
 
-import { Heading, Loading, Screen } from "@/components/ui";
+import { Heading, Loading, Panel, Screen } from "@/components/ui";
 import { googleEnabled } from "@/lib/auth";
-import { requireStage } from "@/lib/onboarding";
+import { requireStage, safeNext } from "@/lib/onboarding";
 
 import { SignInForm } from "./sign-in-form";
 
-const DEV_USERS = ["dev1", "dev2", "dev3", "dev4", "dev5"];
-
-export default function SignInPage() {
+export default function SignInPage(props: PageProps<"/signin">) {
   return (
     <Suspense fallback={<Loading />}>
-      <SignIn />
+      <SignIn searchParams={props.searchParams} />
     </Suspense>
   );
 }
 
-async function SignIn() {
-  await requireStage("signin"); // signed-in visitors go to their next step
-  const isDev = process.env.NODE_ENV !== "production";
+async function SignIn({ searchParams }: { searchParams: PageProps<"/signin">["searchParams"] }) {
+  const params = await searchParams;
+  const next = safeNext(params.next);
+  await requireStage("signin", next); // signed-in visitors go to their next step
+  const joining = next?.startsWith("/play/");
 
   return (
-    <Screen>
-      <Heading title="Orbit" lead="See who's in your orbit. Sign in to join a room." />
-      <SignInForm googleEnabled={googleEnabled} isDev={isDev} />
-      {isDev && (
-        <section className="space-y-2 rounded-2xl border border-dashed border-amber-500/50 p-4">
-          <p className="text-xs font-medium tracking-wide text-amber-700 uppercase dark:text-amber-300">
-            Dev login (not in production)
+    <Screen tone="brand">
+      <Panel>
+        <Heading
+          display
+          title="Orbit"
+          lead={
+            joining
+              ? "Sign in or create an account to join the room."
+              : "Sign in, or create an account in a minute."
+          }
+        />
+        {params.deleted && (
+          <p className="border-ink bg-surface rounded-[8px] border-2 px-4 py-3 text-sm">
+            ✓ Your account and everything in it has been deleted.
           </p>
-          <div className="grid grid-cols-5 gap-2">
-            {DEV_USERS.map((name) => (
-              <a
-                key={name}
-                href={`/api/dev-login?email=${name}@orbit.test`}
-                className="border-foreground/15 hover:bg-foreground/5 rounded-lg border py-2 text-center text-sm"
-              >
-                {name}
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
+        )}
+        <SignInForm googleEnabled={googleEnabled} callbackURL={next ?? "/"} />
+      </Panel>
     </Screen>
   );
 }

@@ -19,3 +19,13 @@ async def get_current_user(identity: IdentityDep, session: SessionDep) -> User:
 
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
+
+
+async def get_consented_user(user: CurrentUserDep) -> User:
+    if user.consented_at is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "consent_required")
+    return user
+
+
+# Hosting or joining a room needs the data notice agreed (task 2.7).
+ConsentedUserDep = Annotated[User, Depends(get_consented_user)]

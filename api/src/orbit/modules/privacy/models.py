@@ -1,4 +1,4 @@
-"""Persistent: each player's graph snapshot, written just before a room expires."""
+"""Persistent: graph snapshots (kept after a room expires) and the deletion audit log."""
 
 from datetime import datetime
 from typing import Any
@@ -21,3 +21,15 @@ class GraphSnapshot(Base):
     taken_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     # Own ego graph + scores, re-renderable by the history page (task 8.4).
     graph: Mapped[dict[str, Any]] = mapped_column(JSONB)
+
+
+class AuditLog(Base):
+    """What was deleted and when. Holds no personal data: counts and room codes only, and for
+    account deletions nothing that identifies the person."""
+
+    __tablename__ = "audit_log"
+
+    id: Mapped[UUID] = uuid_pk()
+    at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    action: Mapped[str] = mapped_column(String(32), index=True)  # room_expired | account_deleted
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)

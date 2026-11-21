@@ -1,22 +1,21 @@
 import { Suspense } from "react";
-import { Placeholder } from "@/components/placeholder";
 
-/** Host big screen: lobby → progress → reveal. */
-export default function HostPage(props: PageProps<"/host/[code]">) {
+import { Loading } from "@/components/ui";
+import { requireStage } from "@/lib/onboarding";
+
+import { HostClient } from "./host-client";
+
+export default function Page(props: PageProps<"/host/[code]">) {
   return (
-    <Suspense fallback={<Placeholder title="Host screen" tasks="3.6, 4.8, 7.2" />}>
-      <HostRoom params={props.params} />
+    <Suspense fallback={<Loading />}>
+      <Room params={props.params} />
     </Suspense>
   );
 }
 
-async function HostRoom({ params }: { params: PageProps<"/host/[code]">["params"] }) {
-  const { code } = await params;
-  return (
-    <Placeholder
-      title="Host screen"
-      detail={`Room ${code}: lobby, progress, reveal`}
-      tasks="3.6, 4.8, 7.2"
-    />
-  );
+async function Room({ params }: { params: PageProps<"/host/[code]">["params"] }) {
+  const code = (await params).code.toUpperCase();
+  // Not signed in or mid-onboarding: go through sign-in/age/consent, then come back here.
+  const { me } = await requireStage("ready", `/host/${code}`);
+  return <HostClient code={code} me={me.id} />;
 }

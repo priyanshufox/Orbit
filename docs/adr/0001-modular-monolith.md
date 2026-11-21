@@ -36,6 +36,7 @@ orbit/
 │   │   │   ├── graph/           Neo4j driver, projection, clustering, /graph view
 │   │   │   ├── content/         sources, tagging, moderation, curator
 │   │   │   └── privacy/         snapshots, expiry, account deletion
+│   │   ├── pipeline.py          cross-module flows: reveal, expire, delete account
 │   │   ├── main.py              API process entry
 │   │   └── worker.py            arq worker entry
 │   └── tests/
@@ -52,7 +53,8 @@ Each module uses the same files (omit any it doesn't need): `router.py` (HTTP), 
 3. **Scoring maths is pure.** `scoring/domain/` has no database, network or framework imports.
 4. **Only `graph` talks to Neo4j.** It owns the driver too. Postgres is the source of truth; Neo4j can always be rebuilt from it. The Python Louvain fallback lives here too.
 5. **Types are generated, never copied.** Frontend types come from FastAPI's OpenAPI spec via `openapi-typescript`. WebSocket events are one Pydantic discriminated union, exported the same way.
-6. **One event bus.** All realtime events go through `core/events.py` → Redis channel `room:{code}`. Modules never touch sockets directly.
+6. **Flows that span modules live in `orbit/pipeline.py`.** It calls each module's service in turn (score → project → reveal; snapshot → delete → audit). Modules never import each other's internals to do this.
+7. **One event bus.** All realtime events go through `core/events.py` → Redis channel `room:{code}`. Modules never touch sockets directly.
 
 ## Alternatives rejected
 

@@ -34,6 +34,35 @@ class Settings(BaseSettings):
     auth_issuer: str = "http://localhost:3000"
     auth_audience: str | None = None  # defaults to the issuer, as Better Auth does
 
+    # --- Rooms and rounds (design: Room lifecycle) ---
+    round_seconds: int = 300
+    room_ttl_hours: int = 48
+    room_member_cap: int = 20
+    answer_grace_seconds: int = 15  # late network writes accepted after the timer
+    # --- Abuse limits (task 10.2) ---
+    joins_per_minute: int = 10
+    rooms_per_host_per_day: int = 10
+    # --- Scoring knobs, tuned in playtests (task 10.6) ---
+    edge_threshold: float = 0.4
+    edges_always_shown: int = 3
+    # JSON in .env, e.g. REACTION_VALUES='{"like": 1, "laugh": 1, "send": 1.5, "skip": -1}'
+    reaction_values: dict[str, float] = {"like": 1.0, "laugh": 1.0, "send": 1.5, "skip": -1.0}
+    graph_use_gds: bool = True  # Neo4j GDS Louvain when installed; Python fallback otherwise
+
+    # --- Content pipeline (Phase 9); each source is skipped when its key is missing ---
+    anthropic_api_key: SecretStr | None = None
+    content_llm_model: str = "claude-opus-5-5"
+    imgflip_username: str | None = None
+    imgflip_password: SecretStr | None = None
+    newsdata_api_key: SecretStr | None = None
+    memes_per_day: int = 20
+    news_per_day: int = 50
+
+    # --- Observability (task 10.3) ---
+    sentry_dsn: str | None = None
+    # GET /health/metrics needs header X-Metrics-Token with this value; unset = endpoint off.
+    metrics_token: SecretStr | None = None
+
     log_level: str = "INFO"
 
     @property

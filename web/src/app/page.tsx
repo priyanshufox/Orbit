@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { DeleteAccount } from "@/components/home/delete-account";
+import { JoinForm } from "@/components/home/join-form";
 import { Button, Heading, Loading, Screen } from "@/components/ui";
-import { signOut } from "@/lib/actions";
+import { createRoom, signOut } from "@/lib/actions";
 import { requireStage } from "@/lib/onboarding";
 
 export default function Home() {
@@ -14,26 +16,33 @@ export default function Home() {
 }
 
 async function HomeScreen() {
-  // Visitors who aren't signed in, or are mid-onboarding, are sent to their next step.
+  // Visitors who aren't signed in, or are mid-sign-up, are sent to their next step.
   const { me } = await requireStage("ready");
   return (
     <Screen>
-      <Heading title={`Hi ${me.name}`} lead="See who's in your orbit." />
-      <p className="bg-foreground/5 text-foreground/70 rounded-2xl p-4 text-sm">
-        Creating and joining rooms arrives in Phase 3.
-      </p>
-      <div className="space-y-2">
-        <Link
-          href="/roots"
-          className="border-foreground/15 hover:bg-foreground/5 block rounded-xl border px-5 py-3 text-center"
-        >
-          Edit your roots
+      <Heading display title={`Hi ${me.name.split(" ")[0]}`} lead="See who's in your orbit." />
+
+      <form action={createRoom}>
+        <Button type="submit">Host a room</Button>
+      </form>
+
+      <JoinForm />
+
+      <nav className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-2 text-sm">
+        <Link href="/history" className="font-semibold underline underline-offset-4">
+          Past orbits
+        </Link>
+        <Link href="/profile" className="font-semibold underline underline-offset-4">
+          Your profile
         </Link>
         <form action={signOut}>
-          <Button variant="ghost" type="submit">
+          <button type="submit" className="text-foreground/75 underline underline-offset-4">
             Sign out
-          </Button>
+          </button>
         </form>
+      </nav>
+      <div className="border-foreground/15 border-t pt-4">
+        <DeleteAccount />
       </div>
     </Screen>
   );

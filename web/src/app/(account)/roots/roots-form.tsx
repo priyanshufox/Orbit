@@ -7,7 +7,7 @@ import { Button, ErrorText, Field } from "@/components/ui";
 import { type FormState, saveRoots } from "@/lib/actions";
 import type { Roots } from "@/lib/api/server";
 
-export function RootsForm({ roots }: { roots: Roots }) {
+export function RootsForm({ roots, next }: { roots: Roots; next: string | null }) {
   const [state, action, pending] = useActionState<FormState, FormData>(saveRoots, undefined);
   const childhood = roots.childhood_cities ?? [];
   // After a failed save, show what was typed rather than what is stored.
@@ -16,6 +16,7 @@ export function RootsForm({ roots }: { roots: Roots }) {
 
   return (
     <form action={action} className="space-y-5">
+      {next && <input type="hidden" name="next" value={next} />}
       <Field
         label="Birth city"
         name="birth_city"
@@ -55,7 +56,10 @@ export function RootsForm({ roots }: { roots: Roots }) {
       <Button type="submit" disabled={pending}>
         {pending ? "Saving…" : "Save"}
       </Button>
-      <Link href="/" className="text-foreground/70 block text-center text-sm hover:underline">
+      <Link
+        href={next ?? "/"}
+        className="text-foreground/70 block text-center text-sm hover:underline"
+      >
         Skip for now
       </Link>
     </form>

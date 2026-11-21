@@ -19,7 +19,9 @@ from sqlalchemy import (
     Table,
     Text,
     Uuid,
+    text,
 )
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from orbit.core.db import Base, created_at
@@ -57,6 +59,10 @@ class User(Base):
     birth_year: Mapped[int] = mapped_column(SmallInteger)
     is_adult: Mapped[bool]
     consented_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Picked at sign-up from accounts.hobbies.HOBBIES; feeds the answers signal and edge reasons.
+    hobbies: Mapped[list[str]] = mapped_column(
+        ARRAY(String(32)), default=list, server_default=text("'{}'")
+    )
     created_at: Mapped[datetime] = created_at()
 
     __table_args__ = (CheckConstraint("is_adult", name="adult_only"),)

@@ -1,18 +1,181 @@
 {
   "components": {
     "schemas": {
-      "AgeGate": {
+      "AnswerIn": {
         "properties": {
-          "date_of_birth": {
-            "format": "date",
-            "title": "Date Of Birth",
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "title": "AnswerIn",
+        "type": "object"
+      },
+      "ContentCard": {
+        "properties": {
+          "content_type": {
+            "enum": [
+              "fact",
+              "meme",
+              "news"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "content",
+            "default": "content",
+            "title": "Kind",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          }
+        },
+        "required": [
+          "id",
+          "content_type",
+          "payload",
+          "source_url"
+        ],
+        "title": "ContentCard",
+        "type": "object"
+      },
+      "DeckView": {
+        "properties": {
+          "answers": {
+            "additionalProperties": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "title": "Answers",
+            "type": "object"
+          },
+          "cards": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "content": "#/components/schemas/ContentCard",
+                  "question": "#/components/schemas/QuestionCard"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/QuestionCard"
+                },
+                {
+                  "$ref": "#/components/schemas/ContentCard"
+                }
+              ]
+            },
+            "title": "Cards",
+            "type": "array"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "reactions": {
+            "additionalProperties": {
+              "enum": [
+                "like",
+                "laugh",
+                "skip",
+                "send"
+              ],
+              "type": "string"
+            },
+            "propertyNames": {
+              "format": "uuid"
+            },
+            "title": "Reactions",
+            "type": "object"
+          }
+        },
+        "required": [
+          "ends_at",
+          "cards",
+          "answers",
+          "reactions"
+        ],
+        "title": "DeckView",
+        "type": "object"
+      },
+      "EdgeReason": {
+        "properties": {
+          "signal": {
+            "title": "Signal",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "signal",
+          "text",
+          "weight"
+        ],
+        "title": "EdgeReason",
+        "type": "object"
+      },
+      "Follow": {
+        "properties": {
+          "from_user": {
+            "format": "uuid",
+            "title": "From User",
+            "type": "string"
+          },
+          "to_user": {
+            "format": "uuid",
+            "title": "To User",
             "type": "string"
           }
         },
         "required": [
-          "date_of_birth"
+          "from_user",
+          "to_user"
         ],
-        "title": "AgeGate",
+        "title": "Follow",
         "type": "object"
       },
       "GameStarted": {
@@ -34,6 +197,176 @@
           "ends_at"
         ],
         "title": "GameStarted",
+        "type": "object"
+      },
+      "GraphEdge": {
+        "properties": {
+          "a": {
+            "format": "uuid",
+            "title": "A",
+            "type": "string"
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answers"
+          },
+          "b": {
+            "format": "uuid",
+            "title": "B",
+            "type": "string"
+          },
+          "reactions": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reactions"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/EdgeReason"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "roots": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roots"
+          },
+          "social": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Social"
+          },
+          "total": {
+            "title": "Total",
+            "type": "number"
+          }
+        },
+        "required": [
+          "a",
+          "b",
+          "total",
+          "answers",
+          "reactions",
+          "roots",
+          "social",
+          "reasons"
+        ],
+        "title": "GraphEdge",
+        "type": "object"
+      },
+      "GraphNode": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "community": {
+            "title": "Community",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "x": {
+            "default": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 0.0,
+            "title": "Y",
+            "type": "number"
+          },
+          "z": {
+            "default": 0.0,
+            "title": "Z",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "avatar_url",
+          "community"
+        ],
+        "title": "GraphNode",
+        "type": "object"
+      },
+      "GraphView": {
+        "description": "The reveal (design: everything public): every drawn edge carries its score and reasons.",
+        "properties": {
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/GraphEdge"
+            },
+            "title": "Edges",
+            "type": "array"
+          },
+          "follows": {
+            "items": {
+              "$ref": "#/components/schemas/Follow"
+            },
+            "title": "Follows",
+            "type": "array"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "room_code": {
+            "title": "Room Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "room_code",
+          "nodes",
+          "edges",
+          "follows"
+        ],
+        "title": "GraphView",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -68,6 +401,20 @@
         "title": "Health",
         "type": "object"
       },
+      "Kick": {
+        "properties": {
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id"
+        ],
+        "title": "Kick",
+        "type": "object"
+      },
       "Me": {
         "properties": {
           "avatar_url": {
@@ -89,6 +436,33 @@
             "title": "Email",
             "type": "string"
           },
+          "hobbies": {
+            "items": {
+              "enum": [
+                "Cricket",
+                "Football",
+                "Fitness",
+                "Gaming",
+                "Music",
+                "Dancing",
+                "Movies",
+                "Anime",
+                "Reading",
+                "Writing",
+                "Cooking",
+                "Food",
+                "Travel",
+                "Photography",
+                "Art",
+                "Tech",
+                "Fashion",
+                "Trekking"
+              ],
+              "type": "string"
+            },
+            "title": "Hobbies",
+            "type": "array"
+          },
           "id": {
             "format": "uuid",
             "title": "Id",
@@ -108,10 +482,47 @@
           "email",
           "name",
           "avatar_url",
+          "hobbies",
           "onboarded",
           "consented"
         ],
         "title": "Me",
+        "type": "object"
+      },
+      "Member": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "finished": {
+            "title": "Finished",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "avatar_url",
+          "finished"
+        ],
+        "title": "Member",
         "type": "object"
       },
       "MemberJoined": {
@@ -153,6 +564,91 @@
         "title": "MemberJoined",
         "type": "object"
       },
+      "MemberLeft": {
+        "description": "A member left (\"Leave and delete my data\") or was kicked; their sockets are closed.",
+        "properties": {
+          "reason": {
+            "enum": [
+              "left",
+              "kicked"
+            ],
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "const": "member_left",
+            "default": "member_left",
+            "title": "Type",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "user_id",
+          "reason"
+        ],
+        "title": "MemberLeft",
+        "type": "object"
+      },
+      "ProfileUpdate": {
+        "properties": {
+          "hobbies": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "Cricket",
+                    "Football",
+                    "Fitness",
+                    "Gaming",
+                    "Music",
+                    "Dancing",
+                    "Movies",
+                    "Anime",
+                    "Reading",
+                    "Writing",
+                    "Cooking",
+                    "Food",
+                    "Travel",
+                    "Photography",
+                    "Art",
+                    "Tech",
+                    "Fashion",
+                    "Trekking"
+                  ],
+                  "type": "string"
+                },
+                "maxItems": 6,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hobbies"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "ProfileUpdate",
+        "type": "object"
+      },
       "Progress": {
         "properties": {
           "finished": {
@@ -176,6 +672,66 @@
           "total"
         ],
         "title": "Progress",
+        "type": "object"
+      },
+      "QuestionCard": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "question",
+            "default": "question",
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "additionalProperties": true,
+            "title": "Options",
+            "type": "object"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          },
+          "question_kind": {
+            "enum": [
+              "single",
+              "multi",
+              "slider"
+            ],
+            "title": "Question Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "question_kind",
+          "prompt",
+          "options"
+        ],
+        "title": "QuestionCard",
+        "type": "object"
+      },
+      "ReactionIn": {
+        "properties": {
+          "reaction": {
+            "enum": [
+              "like",
+              "laugh",
+              "skip",
+              "send"
+            ],
+            "title": "Reaction",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reaction"
+        ],
+        "title": "ReactionIn",
         "type": "object"
       },
       "Readiness": {
@@ -251,6 +807,7 @@
           "mapping": {
             "game_started": "#/components/schemas/GameStarted",
             "member_joined": "#/components/schemas/MemberJoined",
+            "member_left": "#/components/schemas/MemberLeft",
             "progress": "#/components/schemas/Progress",
             "reveal": "#/components/schemas/Reveal",
             "room_closing": "#/components/schemas/RoomClosing",
@@ -262,6 +819,9 @@
         "oneOf": [
           {
             "$ref": "#/components/schemas/MemberJoined"
+          },
+          {
+            "$ref": "#/components/schemas/MemberLeft"
           },
           {
             "$ref": "#/components/schemas/GameStarted"
@@ -282,6 +842,103 @@
             "$ref": "#/components/schemas/RoomClosing"
           }
         ]
+      },
+      "RoomState": {
+        "enum": [
+          "CREATED",
+          "LOBBY",
+          "PLAYING",
+          "SCORING",
+          "REVEALED",
+          "EXPIRED"
+        ],
+        "title": "RoomState",
+        "type": "string"
+      },
+      "RoomView": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "ends_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ends At"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "host_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host Id"
+          },
+          "is_host": {
+            "title": "Is Host",
+            "type": "boolean"
+          },
+          "is_member": {
+            "title": "Is Member",
+            "type": "boolean"
+          },
+          "member_cap": {
+            "title": "Member Cap",
+            "type": "integer"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/Member"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "$ref": "#/components/schemas/RoomState"
+          }
+        },
+        "required": [
+          "code",
+          "state",
+          "host_id",
+          "is_host",
+          "is_member",
+          "member_cap",
+          "started_at",
+          "ends_at",
+          "expires_at",
+          "members"
+        ],
+        "title": "RoomView",
+        "type": "object"
       },
       "Roots": {
         "description": "All optional. PUT replaces everything; send empty values to clear.",
@@ -360,6 +1017,87 @@
         "title": "Scoring",
         "type": "object"
       },
+      "SignUp": {
+        "description": "Sign-up (task 2.6 + profile). Only the birth year is stored; the full date gives an\nexact 18+ check.",
+        "properties": {
+          "date_of_birth": {
+            "format": "date",
+            "title": "Date Of Birth",
+            "type": "string"
+          },
+          "hobbies": {
+            "items": {
+              "enum": [
+                "Cricket",
+                "Football",
+                "Fitness",
+                "Gaming",
+                "Music",
+                "Dancing",
+                "Movies",
+                "Anime",
+                "Reading",
+                "Writing",
+                "Cooking",
+                "Food",
+                "Travel",
+                "Photography",
+                "Art",
+                "Tech",
+                "Fashion",
+                "Trekking"
+              ],
+              "type": "string"
+            },
+            "maxItems": 6,
+            "title": "Hobbies",
+            "type": "array"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "date_of_birth"
+        ],
+        "title": "SignUp",
+        "type": "object"
+      },
+      "Snapshot": {
+        "properties": {
+          "graph": {
+            "additionalProperties": true,
+            "title": "Graph",
+            "type": "object"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "room_code": {
+            "title": "Room Code",
+            "type": "string"
+          },
+          "taken_at": {
+            "format": "date-time",
+            "title": "Taken At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "room_code",
+          "taken_at",
+          "graph"
+        ],
+        "title": "Snapshot",
+        "type": "object"
+      },
       "SocialAdded": {
         "properties": {
           "from": {
@@ -394,6 +1132,43 @@
           "kind"
         ],
         "title": "SocialAdded",
+        "type": "object"
+      },
+      "SocialIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "follow",
+              "like_profile"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "to_user": {
+            "format": "uuid",
+            "title": "To User",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to_user",
+          "kind"
+        ],
+        "title": "SocialIn",
+        "type": "object"
+      },
+      "Started": {
+        "properties": {
+          "ends_at": {
+            "format": "date-time",
+            "title": "Ends At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ends_at"
+        ],
+        "title": "Started",
         "type": "object"
       },
       "ValidationError": {
@@ -495,6 +1270,29 @@
       }
     },
     "/me": {
+      "delete": {
+        "description": "Delete my account (task 8.5): identity, profile, roots, snapshots, and my data in every\nroom, in Postgres and Neo4j. Runs immediately; the design allows up to 24 h.",
+        "operationId": "delete_me_me_delete",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete Me",
+        "tags": [
+          "privacy"
+        ]
+      },
       "get": {
         "description": "Who am I, and how far through onboarding (age gate, consent).",
         "operationId": "get_me_me_get",
@@ -519,17 +1317,89 @@
         "tags": [
           "accounts"
         ]
-      }
-    },
-    "/me/age": {
-      "post": {
-        "description": "Age gate (task 2.6). Adults get an Orbit profile; for under-18s the sign-in identity is\ndeleted and nothing is stored.",
-        "operationId": "pass_age_gate_me_age_post",
+      },
+      "patch": {
+        "description": "Change display name or hobbies.",
+        "operationId": "update_me_me_patch",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AgeGate"
+                "$ref": "#/components/schemas/ProfileUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Me",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/me/consent": {
+      "post": {
+        "description": "Record agreement to the data notice (task 2.7). Idempotent.",
+        "operationId": "give_consent_me_consent_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Give Consent",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/me/profile": {
+      "post": {
+        "description": "Sign-up: name, date of birth (18+ check, task 2.6) and hobbies. Adults get an Orbit\nprofile; for under-18s the sign-in identity is deleted and nothing is stored.",
+        "operationId": "sign_up_me_profile_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUp"
               }
             }
           },
@@ -558,34 +1428,7 @@
             "HTTPBearer": []
           }
         ],
-        "summary": "Pass Age Gate",
-        "tags": [
-          "accounts"
-        ]
-      }
-    },
-    "/me/consent": {
-      "post": {
-        "description": "Record agreement to the data notice (task 2.7). Idempotent.",
-        "operationId": "give_consent_me_consent_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Me"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Give Consent",
+        "summary": "Sign Up",
         "tags": [
           "accounts"
         ]
@@ -659,6 +1502,629 @@
         "summary": "Put Roots",
         "tags": [
           "accounts"
+        ]
+      }
+    },
+    "/me/snapshots": {
+      "get": {
+        "description": "My saved graphs from rooms that have expired (task 8.4), newest first.",
+        "operationId": "list_snapshots_me_snapshots_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Snapshot"
+                  },
+                  "title": "Response List Snapshots Me Snapshots Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Snapshots",
+        "tags": [
+          "privacy"
+        ]
+      }
+    },
+    "/rooms": {
+      "post": {
+        "description": "Create a room; you are its host (task 3.1). The host joins as a player separately.",
+        "operationId": "create_room_rooms_post",
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}": {
+      "get": {
+        "operationId": "get_room_rooms__code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}/answers/{question_id}": {
+      "put": {
+        "description": "Idempotent: sending the same answer twice, or changing it, is fine (task 4.6).",
+        "operationId": "put_answer_rooms__code__answers__question_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "question_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Question Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Answer",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/rooms/{code}/deck": {
+      "get": {
+        "description": "The room's cards, the same for every member, plus what I already answered (task 4.3).",
+        "operationId": "get_deck_rooms__code__deck_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeckView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "round_not_started"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Deck",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/rooms/{code}/finish": {
+      "post": {
+        "description": "I'm done with my deck (task 4.8). The last finisher ends the round early (4.9).",
+        "operationId": "finish_rooms__code__finish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Finish",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}/graph": {
+      "get": {
+        "description": "The reveal (task 6.6): the same view for every member and the host screen. Every edge\ncarries its score and reasons (reveal is public to the room).",
+        "operationId": "get_graph_rooms__code__graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "not_in_room"
+          },
+          "409": {
+            "description": "not_revealed"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Graph",
+        "tags": [
+          "graph"
+        ]
+      }
+    },
+    "/rooms/{code}/join": {
+      "post": {
+        "description": "Join (task 3.3). Idempotent for existing members. Late joiners can join mid-round.",
+        "operationId": "join_room_rooms__code__join_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "kicked from this room"
+          },
+          "409": {
+            "description": "room_full or round_over"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "rate_limited"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Join Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}/kick": {
+      "post": {
+        "description": "Host removes a player (and their data); they cannot rejoin this room.",
+        "operationId": "kick_member_rooms__code__kick_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Kick"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Kick Member",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}/leave": {
+      "post": {
+        "description": "Leave and delete my data (task 3.8): answers, reactions, follows and scores go with it.",
+        "operationId": "leave_room_rooms__code__leave_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Leave Room",
+        "tags": [
+          "rooms"
+        ]
+      }
+    },
+    "/rooms/{code}/reactions/{content_id}": {
+      "put": {
+        "operationId": "put_reaction_rooms__code__reactions__content_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "content_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Content Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReactionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Put Reaction",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/rooms/{code}/social": {
+      "post": {
+        "description": "Follow or like another player's profile (task 4.7). After the reveal, new follows are\npushed so the graph can animate them (7.4); they don't change scores.",
+        "operationId": "add_social_rooms__code__social_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SocialIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Add Social",
+        "tags": [
+          "game"
+        ]
+      }
+    },
+    "/rooms/{code}/start": {
+      "post": {
+        "description": "Start the 5-minute round (task 4.4): freeze the deck, tell everyone, schedule the end.",
+        "operationId": "start_round_rooms__code__start_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "title": "Code",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Started"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "not_ready"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Start Round",
+        "tags": [
+          "rooms"
         ]
       }
     }

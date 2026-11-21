@@ -29,3 +29,6 @@ next-env.d.ts
 
 # Local data volumes
 infra/data/
+
+# Drafted facts awaiting human review (task 9.6)
+api/src/orbit/modules/content/data/facts.drafts.json

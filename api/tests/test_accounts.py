@@ -31,7 +31,9 @@ async def onboarded(
     client: AsyncClient, db: AsyncSession, make_token: TokenFactory
 ) -> tuple[UUID, dict]:
     user_id, headers = await signed_in(db, make_token)
-    res = await client.post("/me/age", json={"date_of_birth": ADULT_DOB}, headers=headers)
+    res = await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": ADULT_DOB}, headers=headers
+    )
     assert res.status_code == 200, res.text
     return user_id, headers
 
@@ -84,6 +86,7 @@ async def test_me_before_age_gate(
         "email": None,
         "name": "Diya",
         "avatar_url": "https://img.test/a.png",
+        "hobbies": [],
         "onboarded": False,
         "consented": False,
     }
@@ -93,7 +96,9 @@ async def test_adult_gets_profile_and_only_birth_year_is_stored(
     client: AsyncClient, db: AsyncSession, make_token: TokenFactory
 ) -> None:
     user_id, headers = await signed_in(db, make_token)
-    res = await client.post("/me/age", json={"date_of_birth": ADULT_DOB}, headers=headers)
+    res = await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": ADULT_DOB}, headers=headers
+    )
     assert res.status_code == 200
     assert res.json()["onboarded"] is True
 
@@ -101,7 +106,9 @@ async def test_adult_gets_profile_and_only_birth_year_is_stored(
     assert profile is not None
     assert (profile.birth_year, profile.is_adult, profile.name) == (1999, True, "Diya")
 
-    again = await client.post("/me/age", json={"date_of_birth": ADULT_DOB}, headers=headers)
+    again = await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": ADULT_DOB}, headers=headers
+    )
     assert again.status_code == 200  # idempotent
 
 
@@ -111,7 +118,9 @@ async def test_under_18_leaves_nothing_behind(
     user_id, headers = await signed_in(db, make_token)
     seventeen = date.today().replace(year=date.today().year - 17).isoformat()
 
-    res = await client.post("/me/age", json={"date_of_birth": seventeen}, headers=headers)
+    res = await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": seventeen}, headers=headers
+    )
 
     assert res.status_code == 403
     assert res.json()["detail"] == "under_18"
@@ -126,7 +135,9 @@ async def test_impossible_birth_date_rejected(
     client: AsyncClient, db: AsyncSession, make_token: TokenFactory
 ) -> None:
     _, headers = await signed_in(db, make_token)
-    res = await client.post("/me/age", json={"date_of_birth": "2999-01-01"}, headers=headers)
+    res = await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": "2999-01-01"}, headers=headers
+    )
     assert res.status_code == 422
 
 
@@ -154,7 +165,9 @@ async def test_consent_requires_profile_then_sticks(
     assert early.status_code == 403
     assert early.json()["detail"] == "onboarding_required"
 
-    await client.post("/me/age", json={"date_of_birth": ADULT_DOB}, headers=headers)
+    await client.post(
+        "/me/profile", json={"name": "Diya", "date_of_birth": ADULT_DOB}, headers=headers
+    )
     res = await client.post("/me/consent", headers=headers)
     assert res.status_code == 200
     assert res.json()["consented"] is True
@@ -221,3 +234,42 @@ def test_normalise_city(raw: str, expected: str) -> None:
 def test_normalise_school_and_tidy() -> None:
     assert normalise_school("D.P.S.  Noida") == "d p s noida"
     assert tidy("  Green   Valley ") == "Green Valley"
+
+
+# --- Sign-up profile: name and hobbies -----------------------------------------------------
+
+
+async def test_sign_up_stores_name_and_hobbies_and_can_edit(
+    client: AsyncClient, db: AsyncSession, make_token: TokenFactory
+) -> None:
+    user_id, headers = await signed_in(db, make_token, name="")
+    body = {
+        "name": "  Diya  Rao ",
+        "date_of_birth": ADULT_DOB,
+        "hobbies": ["Music", "Cricket", "Music"],
+    }
+    res = await client.post("/me/profile", json=body, headers=headers)
+    assert res.status_code == 200
+    assert res.json()["name"] == "Diya Rao"
+    assert res.json()["hobbies"] == ["Music", "Cricket"]  # duplicates dropped, order kept
+
+    edited = await client.patch("/me", json={"hobbies": ["Travel"]}, headers=headers)
+    assert edited.json()["hobbies"] == ["Travel"]
+    assert edited.json()["name"] == "Diya Rao"
+    assert (await db.get(User, user_id)).hobbies == ["Travel"]
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"hobbies": ["Skydiving"]},  # not on the list
+        {"hobbies": ["Music", "Cricket", "Travel", "Art", "Tech", "Food", "Anime"]},  # 7 > 6
+        {"name": "   "},
+    ],
+)
+async def test_sign_up_validation(
+    client: AsyncClient, db: AsyncSession, make_token: TokenFactory, bad: dict
+) -> None:
+    _, headers = await signed_in(db, make_token)
+    body = {"name": "Diya", "date_of_birth": ADULT_DOB, **bad}
+    assert (await client.post("/me/profile", json=body, headers=headers)).status_code == 422

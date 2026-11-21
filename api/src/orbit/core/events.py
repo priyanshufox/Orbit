@@ -28,6 +28,14 @@ class MemberJoined(_Event):
     avatar: str | None = None
 
 
+class MemberLeft(_Event):
+    """A member left ("Leave and delete my data") or was kicked; their sockets are closed."""
+
+    type: Literal["member_left"] = "member_left"
+    user_id: UUID
+    reason: Literal["left", "kicked"]
+
+
 class GameStarted(_Event):
     type: Literal["game_started"] = "game_started"
     ends_at: datetime
@@ -61,7 +69,14 @@ class RoomClosing(_Event):
 
 
 RoomEvent = Annotated[
-    MemberJoined | GameStarted | Progress | Scoring | Reveal | SocialAdded | RoomClosing,
+    MemberJoined
+    | MemberLeft
+    | GameStarted
+    | Progress
+    | Scoring
+    | Reveal
+    | SocialAdded
+    | RoomClosing,
     Field(discriminator="type"),
 ]
 

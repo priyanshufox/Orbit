@@ -63,6 +63,7 @@ async def test_publish_reaches_subscriber(redis: Redis) -> None:
         await asyncio.sleep(0.05)
     await pubsub.aclose()
 
-    assert receivers == 1
+    # Redis pub/sub ignores the DB number, so a running dev API also counts as a receiver.
+    assert receivers >= 1
     assert msg is not None
     assert events.parse(msg["data"]) == sent

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from pydantic import AfterValidator, BaseModel, Field, field_validator
 
+from orbit.modules.accounts.hobbies import MAX_HOBBIES, Hobby
 from orbit.modules.accounts.models import MAX_CHILDHOOD_CITIES
 from orbit.modules.accounts.roots import normalise_city, tidy
 
@@ -16,14 +17,34 @@ class Me(BaseModel):
     email: str
     name: str
     avatar_url: str | None
-    # False until the age gate is passed: there is no Orbit profile yet.
+    hobbies: list[Hobby]
+    # False until sign-up (with the 18+ check) is done: there is no Orbit profile yet.
     onboarded: bool
     consented: bool
 
 
-class AgeGate(BaseModel):
-    # Only the year is stored; the full date gives an exact 18+ check.
+DisplayName = Annotated[str, AfterValidator(tidy), Field(min_length=1, max_length=40)]
+
+
+def _unique(v: list[str]) -> list[str]:
+    return list(dict.fromkeys(v))
+
+
+Hobbies = Annotated[list[Hobby], AfterValidator(_unique), Field(max_length=MAX_HOBBIES)]
+
+
+class SignUp(BaseModel):
+    """Sign-up (task 2.6 + profile). Only the birth year is stored; the full date gives an
+    exact 18+ check."""
+
+    name: DisplayName
     date_of_birth: date
+    hobbies: Hobbies = Field(default_factory=list)
+
+
+class ProfileUpdate(BaseModel):
+    name: DisplayName | None = None
+    hobbies: Hobbies | None = None
 
 
 class School(BaseModel):
